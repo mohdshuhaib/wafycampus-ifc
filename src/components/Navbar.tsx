@@ -33,7 +33,7 @@ export default function Navbar() {
                     IFC <span className="text-emerald-300">SEASON 2</span>
                   </span>
                   <span className="hidden sm:inline-block text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-800/80 text-emerald-200 uppercase tracking-wider border border-emerald-600/50">
-                    Kalikkavu
+                    Kalikavu
                   </span>
                 </div>
                 <div className="flex items-center gap-2 text-xs">
@@ -89,7 +89,7 @@ export default function Navbar() {
           <div className="fixed top-20 right-4 left-4 p-6 rounded-3xl bg-[#064e3b] border border-emerald-700 shadow-2xl flex flex-col gap-4 text-white">
             <div className="flex items-center justify-between pb-3 border-b border-emerald-700">
               <span className="text-xs font-bold uppercase tracking-wider text-emerald-300">Navigation</span>
-              <span className="font-arabic text-sm text-emerald-100">جامعة وافي كليكافو</span>
+              <span className="font-arabic text-sm text-emerald-100">حرم الوافي الجامعي</span>
             </div>
             {navLinks.map((link) => (
               <a

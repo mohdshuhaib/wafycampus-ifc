@@ -33,7 +33,7 @@ export default function ShareeahDept() {
           </h2>
 
           <p className="mt-3 text-xs sm:text-sm font-bold text-slate-500 uppercase tracking-widest">
-            Wafy Campus Kalikkavu • 2-Year Advanced Postgraduate Program
+            Wafy Campus kalikavu • 2-Year Advanced Postgraduate Program
           </p>
 
           <p className="mt-4 text-sm sm:text-base text-slate-600 leading-relaxed font-normal">

@@ -18,94 +18,91 @@ import {
   ExternalLink,
   CheckCircle2,
   AlertCircle,
-  Copy,
-  Check,
-  Sparkles,
-  ArrowLeft,
-  Users
+  Star,
+  StarOff,
+  ArrowLeft
 } from "lucide-react";
 import {
-  FEATURED_VIDEOS,
-  GALLERY_IMAGES,
-  RESEARCH_PAPERS,
-  VideoItem,
-  GalleryItem,
-  ResearchPaper
-} from "@/data/conferenceData";
+  extractYoutubeId,
+  getYoutubeThumbnail,
+  getDriveImageUrl,
+  getDrivePdfPreviewUrl
+} from "@/lib/driveUtils";
+import { VideoData, PaperData, GalleryData } from "@/lib/db";
 
 export default function AdminPage() {
-  // Authentication State
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState("");
 
-  // Dashboard Active Tab
-  const [activeTab, setActiveTab] = useState<"overview" | "videos" | "papers" | "gallery" | "sql">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "videos" | "papers" | "gallery">("overview");
 
-  // Data States (initialized with defaults or localStorage)
-  const [videos, setVideos] = useState<VideoItem[]>(FEATURED_VIDEOS);
-  const [papers, setPapers] = useState<ResearchPaper[]>(RESEARCH_PAPERS);
-  const [gallery, setGallery] = useState<GalleryItem[]>(GALLERY_IMAGES);
+  // Database-backed Data States
+  const [videos, setVideos] = useState<VideoData[]>([]);
+  const [papers, setPapers] = useState<PaperData[]>([]);
+  const [gallery, setGallery] = useState<GalleryData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [notification, setNotification] = useState<string | null>(null);
-  const [copiedSql, setCopiedSql] = useState(false);
 
-  // New Video Form State
+  // New Video Form (NO description field)
   const [newVideo, setNewVideo] = useState({
     title: "",
     speaker: "",
-    designation: "Research Scholar, Wafy Campus",
-    duration: "25:00",
+    designation: "Faculty / Research Scholar",
+    duration: "30:00",
     youtubeUrl: "",
-    category: "Academic Paper" as VideoItem["category"],
-    description: "",
-    thumbnailUrl: "/img1.png",
-    views: "1.2K views",
+    category: "Keynote",
     featured: true
   });
 
-  // New Paper Form State
+  // New Paper Form (Google Drive link only)
   const [newPaper, setNewPaper] = useState({
     title: "",
     arabicTitle: "",
     author: "",
     authorRole: "Faculty of Islamic Jurisprudence",
-    department: "Muamalah" as ResearchPaper["department"],
+    department: "Muamalah",
     year: "2026",
-    abstract: "",
-    pdfUrl: "/papers/paper1.pdf",
-    downloadUrl: "/papers/paper1.pdf",
+    driveUrl: "",
     pages: 20,
     featured: true
   });
 
-  // New Gallery Form State
+  // New Gallery Form (Google Drive link only)
   const [newGallery, setNewGallery] = useState({
     title: "",
-    category: "Academic Sessions" as GalleryItem["category"],
-    imageUrl: "/img2.png",
+    category: "Academic Sessions",
+    driveUrl: "",
     caption: "",
     featured: true
   });
 
-  // Check existing session
+  // Load Database Records
+  const loadDatabaseData = async () => {
+    setIsLoading(true);
+    try {
+      const [resV, resP, resG] = await Promise.all([
+        fetch("/api/videos", { cache: "no-store" }),
+        fetch("/api/papers", { cache: "no-store" }),
+        fetch("/api/gallery", { cache: "no-store" })
+      ]);
+      if (resV.ok) setVideos(await resV.json());
+      if (resP.ok) setPapers(await resP.json());
+      if (resG.ok) setGallery(await resG.json());
+    } catch (e) {
+      console.error("Error loading data from database:", e);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
     const session = localStorage.getItem("ifc_admin_auth");
     if (session === "true") {
       setIsAuthenticated(true);
-    }
-    const savedVideos = localStorage.getItem("ifc_admin_videos");
-    if (savedVideos) {
-      try { setVideos(JSON.parse(savedVideos)); } catch {}
-    }
-    const savedPapers = localStorage.getItem("ifc_admin_papers");
-    if (savedPapers) {
-      try { setPapers(JSON.parse(savedPapers)); } catch {}
-    }
-    const savedGallery = localStorage.getItem("ifc_admin_gallery");
-    if (savedGallery) {
-      try { setGallery(JSON.parse(savedGallery)); } catch {}
+      loadDatabaseData();
     }
   }, []);
 
@@ -114,7 +111,7 @@ export default function AdminPage() {
     setTimeout(() => setNotification(null), 3000);
   };
 
-  // Handle Login
+  // Login handler
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError("");
@@ -122,9 +119,10 @@ export default function AdminPage() {
     if (email.trim() === "ifcadmin@gmail.com" && password === "ifcadmin@1") {
       setIsAuthenticated(true);
       localStorage.setItem("ifc_admin_auth", "true");
-      showToast("Signed in successfully as Administrator");
+      loadDatabaseData();
+      showToast("Authenticated as Administrator");
     } else {
-      setLoginError("Invalid credentials. Please use ifcadmin@gmail.com / ifcadmin@1");
+      setLoginError("Invalid email or password.");
     }
   };
 
@@ -133,60 +131,87 @@ export default function AdminPage() {
     localStorage.removeItem("ifc_admin_auth");
   };
 
-  // Extract YouTube ID from link or input
-  const extractYoutubeId = (url: string) => {
-    const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
-    return match ? match[1] : url.trim();
-  };
-
   // Add Video
-  const handleAddVideo = (e: React.FormEvent) => {
+  const handleAddVideo = async (e: React.FormEvent) => {
     e.preventDefault();
     const ytId = extractYoutubeId(newVideo.youtubeUrl);
-    const videoItem: VideoItem = {
+    if (!ytId) {
+      showToast("Please enter a valid YouTube URL or ID");
+      return;
+    }
+
+    const videoItem: VideoData = {
       id: `vid-${Date.now()}`,
       title: newVideo.title,
       speaker: newVideo.speaker,
       designation: newVideo.designation,
       duration: newVideo.duration,
-      youtubeId: ytId || "dQw4w9WgXcQ",
+      youtubeId: ytId,
       category: newVideo.category,
-      description: newVideo.description,
-      thumbnailUrl: newVideo.thumbnailUrl || "/img1.png",
-      views: newVideo.views,
       featured: newVideo.featured
     };
 
-    const updated = [videoItem, ...videos];
-    setVideos(updated);
-    localStorage.setItem("ifc_admin_videos", JSON.stringify(updated));
-    showToast("New video added successfully!");
-    setNewVideo({
-      title: "",
-      speaker: "",
-      designation: "Research Scholar, Wafy Campus",
-      duration: "25:00",
-      youtubeUrl: "",
-      category: "Academic Paper",
-      description: "",
-      thumbnailUrl: "/img1.png",
-      views: "1.2K views",
-      featured: true
-    });
+    try {
+      const res = await fetch("/api/videos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(videoItem)
+      });
+      if (res.ok) {
+        showToast("Video added to database");
+        setNewVideo({
+          title: "",
+          speaker: "",
+          designation: "Faculty / Research Scholar",
+          duration: "30:00",
+          youtubeUrl: "",
+          category: "Keynote",
+          featured: true
+        });
+        loadDatabaseData();
+      }
+    } catch (err) {
+      showToast("Error adding video");
+    }
   };
 
   // Delete Video
-  const handleDeleteVideo = (id: string) => {
-    const updated = videos.filter((v) => v.id !== id);
-    setVideos(updated);
-    localStorage.setItem("ifc_admin_videos", JSON.stringify(updated));
-    showToast("Video deleted");
+  const handleDeleteVideo = async (id: string) => {
+    try {
+      const res = await fetch(`/api/videos?id=${id}`, { method: "DELETE" });
+      if (res.ok) {
+        showToast("Video deleted");
+        loadDatabaseData();
+      }
+    } catch {
+      showToast("Failed to delete video");
+    }
+  };
+
+  // Toggle Video Top 5 Main Page
+  const handleToggleVideoFeatured = async (id: string, currentStatus: boolean) => {
+    try {
+      const res = await fetch("/api/videos", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, featured: !currentStatus })
+      });
+      if (res.ok) {
+        showToast(!currentStatus ? "Added to Main Page Top 5" : "Removed from Main Page Top 5");
+        loadDatabaseData();
+      }
+    } catch {}
   };
 
   // Add Paper
-  const handleAddPaper = (e: React.FormEvent) => {
+  const handleAddPaper = async (e: React.FormEvent) => {
     e.preventDefault();
-    const paperItem: ResearchPaper = {
+    if (!newPaper.driveUrl) {
+      showToast("Please enter a Google Drive link");
+      return;
+    }
+
+    const paperItem: PaperData = {
       id: `paper-${Date.now()}`,
       title: newPaper.title,
       arabicTitle: newPaper.arabicTitle || undefined,
@@ -194,140 +219,162 @@ export default function AdminPage() {
       authorRole: newPaper.authorRole,
       department: newPaper.department,
       year: newPaper.year,
-      abstract: newPaper.abstract,
-      pdfUrl: newPaper.pdfUrl,
-      downloadUrl: newPaper.pdfUrl,
+      driveUrl: newPaper.driveUrl.trim(),
       pages: Number(newPaper.pages) || 1,
       featured: newPaper.featured
     };
 
-    const updated = [paperItem, ...papers];
-    setPapers(updated);
-    localStorage.setItem("ifc_admin_papers", JSON.stringify(updated));
-    showToast("New research paper added successfully!");
-    setNewPaper({
-      title: "",
-      arabicTitle: "",
-      author: "",
-      authorRole: "Faculty of Islamic Jurisprudence",
-      department: "Muamalah",
-      year: "2026",
-      abstract: "",
-      pdfUrl: "/papers/paper1.pdf",
-      downloadUrl: "/papers/paper1.pdf",
-      pages: 20,
-      featured: true
-    });
+    try {
+      const res = await fetch("/api/papers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(paperItem)
+      });
+      if (res.ok) {
+        showToast("Research paper added to database");
+        setNewPaper({
+          title: "",
+          arabicTitle: "",
+          author: "",
+          authorRole: "Faculty of Islamic Jurisprudence",
+          department: "Muamalah",
+          year: "2026",
+          driveUrl: "",
+          pages: 20,
+          featured: true
+        });
+        loadDatabaseData();
+      }
+    } catch {
+      showToast("Error saving paper");
+    }
   };
 
   // Delete Paper
-  const handleDeletePaper = (id: string) => {
-    const updated = papers.filter((p) => p.id !== id);
-    setPapers(updated);
-    localStorage.setItem("ifc_admin_papers", JSON.stringify(updated));
-    showToast("Research paper removed");
+  const handleDeletePaper = async (id: string) => {
+    try {
+      const res = await fetch(`/api/papers?id=${id}`, { method: "DELETE" });
+      if (res.ok) {
+        showToast("Paper removed");
+        loadDatabaseData();
+      }
+    } catch {
+      showToast("Failed to delete paper");
+    }
+  };
+
+  // Toggle Paper Featured
+  const handleTogglePaperFeatured = async (id: string, currentStatus: boolean) => {
+    try {
+      const res = await fetch("/api/papers", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, featured: !currentStatus })
+      });
+      if (res.ok) {
+        showToast(!currentStatus ? "Marked for Main Page" : "Unmarked from Main Page");
+        loadDatabaseData();
+      }
+    } catch {}
   };
 
   // Add Gallery Image
-  const handleAddGallery = (e: React.FormEvent) => {
+  const handleAddGallery = async (e: React.FormEvent) => {
     e.preventDefault();
-    const galleryItem: GalleryItem = {
+    if (!newGallery.driveUrl) {
+      showToast("Please provide a Google Drive link");
+      return;
+    }
+
+    const galleryItem: GalleryData = {
       id: `gal-${Date.now()}`,
       title: newGallery.title,
       category: newGallery.category,
-      imageUrl: newGallery.imageUrl || "/img2.png",
+      driveUrl: newGallery.driveUrl.trim(),
       caption: newGallery.caption,
       featured: newGallery.featured
     };
 
-    const updated = [galleryItem, ...gallery];
-    setGallery(updated);
-    localStorage.setItem("ifc_admin_gallery", JSON.stringify(updated));
-    showToast("New gallery photo added!");
-    setNewGallery({
-      title: "",
-      category: "Academic Sessions",
-      imageUrl: "/img2.png",
-      caption: "",
-      featured: true
-    });
+    try {
+      const res = await fetch("/api/gallery", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(galleryItem)
+      });
+      if (res.ok) {
+        showToast("Gallery image added to database");
+        setNewGallery({
+          title: "",
+          category: "Academic Sessions",
+          driveUrl: "",
+          caption: "",
+          featured: true
+        });
+        loadDatabaseData();
+      }
+    } catch {
+      showToast("Error saving photo");
+    }
   };
 
   // Delete Gallery Image
-  const handleDeleteGallery = (id: string) => {
-    const updated = gallery.filter((g) => g.id !== id);
-    setGallery(updated);
-    localStorage.setItem("ifc_admin_gallery", JSON.stringify(updated));
-    showToast("Gallery item deleted");
+  const handleDeleteGallery = async (id: string) => {
+    try {
+      const res = await fetch(`/api/gallery?id=${id}`, { method: "DELETE" });
+      if (res.ok) {
+        showToast("Gallery photo removed");
+        loadDatabaseData();
+      }
+    } catch {
+      showToast("Failed to delete image");
+    }
   };
 
-  // Generate SQL script for export
-  const generatedSql = `-- SQL Inserts generated from IFC Admin Panel
--- Run these statements in Supabase SQL Editor
-
--- 1. Insert Videos
-${videos
-  .map(
-    (v) =>
-      `INSERT INTO public.videos (id, title, speaker, designation, duration, youtube_id, category, description, thumbnail_url, views, featured) VALUES ('${v.id}', '${v.title.replace(/'/g, "''")}', '${v.speaker.replace(/'/g, "''")}', '${(v.designation || "").replace(/'/g, "''")}', '${v.duration}', '${v.youtubeId}', '${v.category}', '${v.description.replace(/'/g, "''")}', '${v.thumbnailUrl}', '${v.views || ""}', ${v.featured}) ON CONFLICT (id) DO UPDATE SET title = EXCLUDED.title;`
-  )
-  .join("\n")}
-
--- 2. Insert Research Papers
-${papers
-  .map(
-    (p) =>
-      `INSERT INTO public.research_papers (id, title, arabic_title, author, author_role, department, year, abstract, pdf_url, download_url, pages, featured) VALUES ('${p.id}', '${p.title.replace(/'/g, "''")}', '${(p.arabicTitle || "").replace(/'/g, "''")}', '${p.author.replace(/'/g, "''")}', '${p.authorRole.replace(/'/g, "''")}', '${p.department}', '${p.year}', '${p.abstract.replace(/'/g, "''")}', '${p.pdfUrl}', '${p.downloadUrl}', ${p.pages}, ${p.featured}) ON CONFLICT (id) DO UPDATE SET title = EXCLUDED.title;`
-  )
-  .join("\n")}
-
--- 3. Insert Gallery Images
-${gallery
-  .map(
-    (g) =>
-      `INSERT INTO public.gallery (id, title, category, image_url, caption, featured) VALUES ('${g.id}', '${g.title.replace(/'/g, "''")}', '${g.category}', '${g.imageUrl}', '${g.caption.replace(/'/g, "''")}', ${g.featured}) ON CONFLICT (id) DO UPDATE SET title = EXCLUDED.title;`
-  )
-  .join("\n")}
-`;
-
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(generatedSql);
-    setCopiedSql(true);
-    setTimeout(() => setCopiedSql(false), 2500);
+  // Toggle Gallery Top 5 Main Page
+  const handleToggleGalleryFeatured = async (id: string, currentStatus: boolean) => {
+    try {
+      const res = await fetch("/api/gallery", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, featured: !currentStatus })
+      });
+      if (res.ok) {
+        showToast(!currentStatus ? "Added to Main Page Top 5" : "Removed from Main Page Top 5");
+        loadDatabaseData();
+      }
+    } catch {}
   };
 
-  // If Not Authenticated, show Login Screen
+  // Unauthenticated Login Form
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-[#f5f5f7] flex flex-col justify-center items-center p-4 selection:bg-[#064e3b] selection:text-white">
-        {/* Top Back Link */}
         <div className="w-full max-w-md mb-6 flex justify-between items-center">
           <Link
             href="/"
             className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-500 hover:text-[#064e3b] transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>Back to Live Website</span>
+            <span>Return to Site</span>
           </Link>
-          <span className="text-xs font-mono text-[#064e3b] font-bold">IFC SECURE PORTAL</span>
+          <span className="text-xs font-mono text-[#064e3b] font-bold">IFC PORTAL</span>
         </div>
 
-        {/* Login Box */}
         <div className="w-full max-w-md p-8 sm:p-10 rounded-3xl bg-white border border-slate-200 shadow-xl">
           <div className="text-center mb-8">
-            <div className="w-14 h-14 rounded-2xl bg-[#064e3b] text-white flex items-center justify-center mx-auto mb-4 shadow-lg shadow-[#064e3b]/25">
-              <Lock className="w-7 h-7" />
+            <div className="w-14 h-14 rounded-2xl bg-[#064e3b] text-white flex items-center justify-center mx-auto mb-4 shadow-md">
+              <Lock className="w-6 h-6" />
             </div>
             <h1 className="text-2xl font-black text-[#1d1d1f] tracking-tight">
-              IFC Admin Panel
+              Administrative Sign In
             </h1>
-            <p className="text-xs sm:text-sm text-slate-500 mt-1 font-normal">
-              Department of Sharee&apos;ah • Wafy Campus Kalikkavu
+            <p className="text-xs text-slate-500 mt-1">
+              International Fiqh Conference • Wafy Campus kalikavu
             </p>
           </div>
 
           {loginError && (
-            <div className="mb-6 p-3.5 rounded-2xl bg-rose-50 border border-rose-200 flex items-center gap-2.5 text-rose-700 text-xs">
+            <div className="mb-6 p-3.5 rounded-2xl bg-rose-50 border border-rose-200 flex items-center gap-2.5 text-rose-700 text-xs font-medium">
               <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{loginError}</span>
             </div>
@@ -336,7 +383,7 @@ ${gallery
           <form onSubmit={handleLogin} className="space-y-5">
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
-                Administrator Email
+                Email Address
               </label>
               <div className="relative">
                 <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -346,7 +393,7 @@ ${gallery
                   placeholder="ifcadmin@gmail.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:border-[#064e3b] focus:ring-2 focus:ring-[#064e3b]/20"
+                  className="w-full pl-10 pr-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:border-[#064e3b]"
                 />
               </div>
             </div>
@@ -363,7 +410,7 @@ ${gallery
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-10 pr-10 py-3 rounded-2xl bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:border-[#064e3b] focus:ring-2 focus:ring-[#064e3b]/20"
+                  className="w-full pl-10 pr-10 py-3 rounded-2xl bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:border-[#064e3b]"
                 />
                 <button
                   type="button"
@@ -377,33 +424,24 @@ ${gallery
 
             <button
               type="submit"
-              className="w-full py-3.5 rounded-2xl font-bold text-sm uppercase tracking-wider text-white bg-[#064e3b] hover:bg-[#043d2e] shadow-lg shadow-[#064e3b]/20 transition-all transform hover:-translate-y-0.5"
+              className="w-full py-3.5 rounded-2xl font-bold text-sm uppercase tracking-wider text-white bg-[#064e3b] hover:bg-[#043d2e] shadow-md transition-all"
             >
-              Sign In to Dashboard
+              Sign In
             </button>
           </form>
-
-          {/* Quick Demo Autofill */}
-          <div className="mt-6 pt-6 border-t border-slate-100 text-center">
-            <button
-              onClick={() => {
-                setEmail("ifcadmin@gmail.com");
-                setPassword("ifcadmin@1");
-              }}
-              className="text-xs font-semibold text-[#064e3b] hover:underline"
-            >
-              Autofill Credentials (ifcadmin@gmail.com)
-            </button>
-          </div>
         </div>
       </div>
     );
   }
 
-  // Authenticated Admin Dashboard
+  // Calculate featured top 5 counts
+  const featuredVideosCount = videos.filter((v) => v.featured).length;
+  const featuredGalleryCount = gallery.filter((g) => g.featured).length;
+  const featuredPapersCount = papers.filter((p) => p.featured).length;
+
   return (
     <div className="min-h-screen bg-[#f5f5f7] text-[#1d1d1f] flex flex-col selection:bg-[#064e3b] selection:text-white">
-      {/* Toast Notification */}
+      {/* Toast Alert */}
       {notification && (
         <div className="fixed top-6 right-6 z-50 px-5 py-3 rounded-2xl bg-[#064e3b] text-white text-xs font-bold shadow-2xl flex items-center gap-2 animate-in slide-in-from-top duration-200">
           <CheckCircle2 className="w-4 h-4 text-emerald-300" />
@@ -411,7 +449,7 @@ ${gallery
         </div>
       )}
 
-      {/* Admin Top Navigation */}
+      {/* Admin Header */}
       <header className="bg-[#064e3b] text-white border-b border-emerald-800 py-3.5 px-4 sm:px-8 shadow-sm sticky top-0 z-40">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -423,7 +461,7 @@ ${gallery
                 IFC Management Console
               </div>
               <div className="text-[10px] text-emerald-200 font-mono mt-0.5">
-                Logged in as ifcadmin@gmail.com
+                {email || "ifcadmin@gmail.com"}
               </div>
             </div>
           </div>
@@ -434,13 +472,13 @@ ${gallery
               target="_blank"
               className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#043d2e] hover:bg-emerald-900 text-xs font-semibold text-emerald-100 transition-colors"
             >
-              <span>View Live Website</span>
+              <span>Live Website</span>
               <ExternalLink className="w-3.5 h-3.5 text-emerald-300" />
             </Link>
 
             <button
               onClick={handleLogout}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-rose-700/80 hover:bg-rose-700 text-xs font-bold text-white transition-colors"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-rose-700 hover:bg-rose-800 text-xs font-bold text-white transition-colors"
             >
               <LogOut className="w-3.5 h-3.5" />
               <span>Logout</span>
@@ -451,19 +489,18 @@ ${gallery
 
       {/* Main Body */}
       <div className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col md:flex-row gap-8">
-        {/* Sidebar Tabs */}
+        {/* Sidebar */}
         <aside className="w-full md:w-64 shrink-0 flex flex-col gap-2">
-          <div className="p-4 rounded-3xl bg-white border border-slate-200 shadow-xs mb-2">
-            <div className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-2">
-              Navigation
+          <div className="p-4 rounded-3xl bg-white border border-slate-200 shadow-xs">
+            <div className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-2 px-2">
+              Console
             </div>
             <nav className="flex flex-col gap-1.5">
               {[
-                { id: "overview", label: "Dashboard Overview", icon: LayoutDashboard },
+                { id: "overview", label: "Overview", icon: LayoutDashboard },
                 { id: "videos", label: `Videos (${videos.length})`, icon: Video },
                 { id: "papers", label: `Research Papers (${papers.length})`, icon: FileText },
                 { id: "gallery", label: `Gallery (${gallery.length})`, icon: Images },
-                { id: "sql", label: "Export to Supabase SQL", icon: Copy },
               ].map((tab) => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.id;
@@ -484,11 +521,6 @@ ${gallery
               })}
             </nav>
           </div>
-
-          <div className="p-4 rounded-3xl bg-emerald-50 border border-emerald-200 text-xs text-[#064e3b]">
-            <span className="font-bold block mb-1">Supabase Linked:</span>
-            Your changes are automatically stored in the active state and ready to be synced with your Supabase SQL editor using the SQL tab.
-          </div>
         </aside>
 
         {/* Content Area */}
@@ -498,19 +530,23 @@ ${gallery
             <div className="space-y-6">
               <div>
                 <h2 className="text-2xl font-black text-slate-900 tracking-tight">
-                  Overview &amp; Statistics
+                  Database Overview
                 </h2>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Manage conference media, research publications, and gallery contents for IFC Season 2.
+                  Live counts and configuration loaded directly from the database.
                 </p>
               </div>
 
-              {/* Stat Cards */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="p-6 rounded-3xl bg-white border border-slate-200 shadow-sm flex items-center justify-between">
                   <div>
-                    <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">Videos</div>
+                    <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                      Videos in Database
+                    </div>
                     <div className="text-3xl font-black text-[#064e3b] mt-1">{videos.length}</div>
+                    <div className="text-[11px] text-emerald-700 font-semibold mt-1">
+                      {featuredVideosCount} active in Top 5
+                    </div>
                   </div>
                   <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-[#064e3b] flex items-center justify-center">
                     <Video className="w-6 h-6" />
@@ -519,8 +555,13 @@ ${gallery
 
                 <div className="p-6 rounded-3xl bg-white border border-slate-200 shadow-sm flex items-center justify-between">
                   <div>
-                    <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">Research Papers</div>
+                    <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                      Research Papers
+                    </div>
                     <div className="text-3xl font-black text-[#064e3b] mt-1">{papers.length}</div>
+                    <div className="text-[11px] text-emerald-700 font-semibold mt-1">
+                      {featuredPapersCount} shown on main page
+                    </div>
                   </div>
                   <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-[#064e3b] flex items-center justify-center">
                     <FileText className="w-6 h-6" />
@@ -529,55 +570,30 @@ ${gallery
 
                 <div className="p-6 rounded-3xl bg-white border border-slate-200 shadow-sm flex items-center justify-between">
                   <div>
-                    <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">Gallery Images</div>
+                    <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                      Gallery Images
+                    </div>
                     <div className="text-3xl font-black text-[#064e3b] mt-1">{gallery.length}</div>
+                    <div className="text-[11px] text-emerald-700 font-semibold mt-1">
+                      {featuredGalleryCount} in Top 5 Grid
+                    </div>
                   </div>
                   <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-[#064e3b] flex items-center justify-center">
                     <Images className="w-6 h-6" />
                   </div>
                 </div>
               </div>
-
-              {/* Quick Actions */}
-              <div className="p-6 rounded-3xl bg-white border border-slate-200 shadow-sm space-y-4">
-                <h3 className="text-sm font-bold uppercase tracking-wider text-slate-800">
-                  Quick Actions
-                </h3>
-                <div className="flex flex-wrap gap-3">
-                  <button
-                    onClick={() => setActiveTab("videos")}
-                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-[#064e3b] text-white text-xs font-bold hover:bg-[#043d2e] shadow-xs"
-                  >
-                    <PlusCircle className="w-4 h-4" />
-                    <span>Add New Video</span>
-                  </button>
-                  <button
-                    onClick={() => setActiveTab("papers")}
-                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-[#064e3b] text-white text-xs font-bold hover:bg-[#043d2e] shadow-xs"
-                  >
-                    <PlusCircle className="w-4 h-4" />
-                    <span>Upload Research Paper</span>
-                  </button>
-                  <button
-                    onClick={() => setActiveTab("gallery")}
-                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-[#064e3b] text-white text-xs font-bold hover:bg-[#043d2e] shadow-xs"
-                  >
-                    <PlusCircle className="w-4 h-4" />
-                    <span>Add Photo to Gallery</span>
-                  </button>
-                </div>
-              </div>
             </div>
           )}
 
-          {/* TAB 2: VIDEOS */}
+          {/* TAB 2: VIDEOS (NO DESCRIPTION FIELD, AUTO THUMBNAIL, TOP 5 SELECTION) */}
           {activeTab === "videos" && (
             <div className="space-y-8">
               {/* Add Video Form */}
               <div className="p-6 sm:p-8 rounded-3xl bg-white border border-slate-200 shadow-sm">
                 <h3 className="text-lg font-black text-slate-900 tracking-tight mb-4 flex items-center gap-2">
                   <PlusCircle className="w-5 h-5 text-[#064e3b]" />
-                  <span>Add New YouTube Video</span>
+                  <span>Add Video</span>
                 </h3>
 
                 <form onSubmit={handleAddVideo} className="space-y-4">
@@ -612,12 +628,26 @@ ${gallery
 
                     <div>
                       <label className="block text-xs font-bold text-slate-700 mb-1">
-                        YouTube URL or Video ID *
+                        Speaker Designation *
                       </label>
                       <input
                         type="text"
                         required
-                        placeholder="e.g. https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+                        placeholder="e.g. Senior Jurisprudence Fellow"
+                        value={newVideo.designation}
+                        onChange={(e) => setNewVideo({ ...newVideo, designation: e.target.value })}
+                        className="w-full px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-sm focus:outline-none focus:border-[#064e3b]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        YouTube URL or ID *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="https://www.youtube.com/watch?v=..."
                         value={newVideo.youtubeUrl}
                         onChange={(e) => setNewVideo({ ...newVideo, youtubeUrl: e.target.value })}
                         className="w-full px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-sm focus:outline-none focus:border-[#064e3b]"
@@ -626,59 +656,68 @@ ${gallery
 
                     <div>
                       <label className="block text-xs font-bold text-slate-700 mb-1">
-                        Duration &amp; Category
+                        Duration (e.g. 35:20)
                       </label>
-                      <div className="grid grid-cols-2 gap-2">
-                        <input
-                          type="text"
-                          placeholder="Duration (e.g. 35:20)"
-                          value={newVideo.duration}
-                          onChange={(e) => setNewVideo({ ...newVideo, duration: e.target.value })}
-                          className="w-full px-3 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-sm focus:outline-none focus:border-[#064e3b]"
-                        />
-                        <select
-                          value={newVideo.category}
-                          onChange={(e) => setNewVideo({ ...newVideo, category: e.target.value as any })}
-                          className="w-full px-3 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-700 focus:outline-none focus:border-[#064e3b]"
-                        >
-                          <option value="Inaugural">Inaugural</option>
-                          <option value="Keynote">Keynote</option>
-                          <option value="Panel Discussion">Panel Discussion</option>
-                          <option value="Academic Paper">Academic Paper</option>
-                          <option value="Valedictory">Valedictory</option>
-                        </select>
-                      </div>
+                      <input
+                        type="text"
+                        placeholder="35:20"
+                        value={newVideo.duration}
+                        onChange={(e) => setNewVideo({ ...newVideo, duration: e.target.value })}
+                        className="w-full px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-sm focus:outline-none focus:border-[#064e3b]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        Category
+                      </label>
+                      <select
+                        value={newVideo.category}
+                        onChange={(e) => setNewVideo({ ...newVideo, category: e.target.value })}
+                        className="w-full px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-700 focus:outline-none focus:border-[#064e3b]"
+                      >
+                        <option value="Inaugural">Inaugural</option>
+                        <option value="Keynote">Keynote</option>
+                        <option value="Panel Discussion">Panel Discussion</option>
+                        <option value="Academic Paper">Academic Paper</option>
+                        <option value="Valedictory">Valedictory</option>
+                      </select>
                     </div>
                   </div>
 
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Description / Summary *
-                    </label>
-                    <textarea
-                      required
-                      rows={2}
-                      placeholder="Brief overview explaining what this video session covers..."
-                      value={newVideo.description}
-                      onChange={(e) => setNewVideo({ ...newVideo, description: e.target.value })}
-                      className="w-full px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-sm focus:outline-none focus:border-[#064e3b]"
+                  <div className="flex items-center gap-2 pt-2">
+                    <input
+                      type="checkbox"
+                      id="videoFeatured"
+                      checked={newVideo.featured}
+                      onChange={(e) => setNewVideo({ ...newVideo, featured: e.target.checked })}
+                      className="w-4 h-4 rounded text-[#064e3b] focus:ring-[#064e3b]"
                     />
+                    <label htmlFor="videoFeatured" className="text-xs font-bold text-slate-800">
+                      Show in Top 5 (Main Page)
+                    </label>
                   </div>
 
                   <button
                     type="submit"
-                    className="px-6 py-3 rounded-2xl bg-[#064e3b] text-white font-bold text-xs uppercase tracking-wider hover:bg-[#043d2e] shadow-md"
+                    className="px-6 py-2.5 rounded-2xl bg-[#064e3b] text-white font-bold text-xs uppercase tracking-wider hover:bg-[#043d2e] shadow-xs"
                   >
-                    Save Video Entry
+                    Add Video
                   </button>
                 </form>
               </div>
 
-              {/* Current Videos List */}
+              {/* Video List with Top 5 Selection Toggle */}
               <div className="space-y-4">
-                <h3 className="text-base font-bold text-slate-900">
-                  Current Videos List ({videos.length})
-                </h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-base font-bold text-slate-900">
+                    Video Catalog ({videos.length})
+                  </h3>
+                  <span className="text-xs text-slate-500 font-medium">
+                    Top 5 on Main Page: <strong className="text-[#064e3b]">{featuredVideosCount} selected</strong>
+                  </span>
+                </div>
+
                 <div className="grid grid-cols-1 gap-3">
                   {videos.map((vid) => (
                     <div
@@ -686,31 +725,62 @@ ${gallery
                       className="p-4 rounded-3xl bg-white border border-slate-200 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
                     >
                       <div className="flex items-center gap-4 overflow-hidden">
-                        <div className="w-20 aspect-video rounded-xl overflow-hidden bg-black shrink-0 relative">
-                          <Image src={vid.thumbnailUrl} alt={vid.title} fill className="object-cover" />
+                        {/* Auto YouTube Thumbnail */}
+                        <div className="w-24 aspect-video rounded-xl overflow-hidden bg-black shrink-0 relative">
+                          <Image
+                            src={getYoutubeThumbnail(vid.youtubeId)}
+                            alt={vid.title}
+                            fill
+                            className="object-cover"
+                          />
                         </div>
                         <div className="truncate">
-                          <span className="text-[10px] font-black uppercase text-[#064e3b] bg-emerald-50 px-2 py-0.5 rounded-md mr-2">
-                            {vid.category}
-                          </span>
-                          <span className="text-xs font-mono text-slate-400">{vid.duration}</span>
-                          <h4 className="text-sm font-bold text-slate-900 truncate mt-0.5">
+                          <div className="flex items-center gap-2 mb-0.5">
+                            <span className="text-[10px] font-black uppercase text-[#064e3b] bg-emerald-50 px-2 py-0.5 rounded-md">
+                              {vid.category}
+                            </span>
+                            <span className="text-xs font-mono text-slate-400">{vid.duration}</span>
+                            {vid.featured && (
+                              <span className="text-[10px] font-black text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md flex items-center gap-1">
+                                <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
+                                Top 5 (Main Page)
+                              </span>
+                            )}
+                          </div>
+                          <h4 className="text-sm font-bold text-slate-900 truncate">
                             {vid.title}
                           </h4>
-                          <p className="text-xs text-slate-500 truncate">{vid.speaker}</p>
+                          <p className="text-xs text-slate-500 truncate">
+                            {vid.speaker} • {vid.designation}
+                          </p>
                         </div>
                       </div>
 
                       <div className="flex items-center gap-2 shrink-0">
+                        {/* Toggle Top 5 Button */}
+                        <button
+                          onClick={() => handleToggleVideoFeatured(vid.id, vid.featured)}
+                          className={`p-2 rounded-xl text-xs font-bold flex items-center gap-1 transition-colors ${
+                            vid.featured
+                              ? "bg-amber-100 text-amber-800 hover:bg-amber-200"
+                              : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                          }`}
+                          title="Toggle Main Page Top 5"
+                        >
+                          {vid.featured ? <Star className="w-4 h-4 fill-amber-600 text-amber-600" /> : <StarOff className="w-4 h-4" />}
+                          <span className="hidden sm:inline">{vid.featured ? "In Top 5" : "Make Top 5"}</span>
+                        </button>
+
                         <a
                           href={`https://www.youtube.com/watch?v=${vid.youtubeId}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="p-2 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-100"
-                          title="Open on YouTube"
+                          title="Open YouTube"
                         >
                           <ExternalLink className="w-4 h-4" />
                         </a>
+
                         <button
                           onClick={() => handleDeleteVideo(vid.id)}
                           className="p-2 rounded-xl text-rose-600 hover:bg-rose-50"
@@ -726,14 +796,14 @@ ${gallery
             </div>
           )}
 
-          {/* TAB 3: PAPERS */}
+          {/* TAB 3: PAPERS (GOOGLE DRIVE LINK ONLY) */}
           {activeTab === "papers" && (
             <div className="space-y-8">
               {/* Add Paper Form */}
               <div className="p-6 sm:p-8 rounded-3xl bg-white border border-slate-200 shadow-sm">
                 <h3 className="text-lg font-black text-slate-900 tracking-tight mb-4 flex items-center gap-2">
                   <PlusCircle className="w-5 h-5 text-[#064e3b]" />
-                  <span>Add New Research Paper</span>
+                  <span>Add Research Paper (Drive Link)</span>
                 </h3>
 
                 <form onSubmit={handleAddPaper} className="space-y-4">
@@ -745,7 +815,7 @@ ${gallery
                       <input
                         type="text"
                         required
-                        placeholder="e.g. Contemporary Waqf Governance in India"
+                        placeholder="e.g. Modern Banking Principles in Shariah"
                         value={newPaper.title}
                         onChange={(e) => setNewPaper({ ...newPaper, title: e.target.value })}
                         className="w-full px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-sm focus:outline-none focus:border-[#064e3b]"
@@ -758,7 +828,7 @@ ${gallery
                       </label>
                       <input
                         type="text"
-                        placeholder="e.g. حوكمة الأوقاف المعاصرة"
+                        placeholder="e.g. أصول المعاملات المصرفية المعاصرة"
                         value={newPaper.arabicTitle}
                         onChange={(e) => setNewPaper({ ...newPaper, arabicTitle: e.target.value })}
                         className="w-full px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-sm text-right font-arabic focus:outline-none focus:border-[#064e3b]"
@@ -767,7 +837,7 @@ ${gallery
 
                     <div>
                       <label className="block text-xs font-bold text-slate-700 mb-1">
-                        Author / Research Scholar *
+                        Author / Research Group *
                       </label>
                       <input
                         type="text"
@@ -786,7 +856,7 @@ ${gallery
                       <div className="grid grid-cols-2 gap-2">
                         <select
                           value={newPaper.department}
-                          onChange={(e) => setNewPaper({ ...newPaper, department: e.target.value as any })}
+                          onChange={(e) => setNewPaper({ ...newPaper, department: e.target.value })}
                           className="w-full px-3 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-700 focus:outline-none focus:border-[#064e3b]"
                         >
                           <option value="Muamalah">Muamalah</option>
@@ -805,52 +875,57 @@ ${gallery
 
                     <div className="sm:col-span-2">
                       <label className="block text-xs font-bold text-slate-700 mb-1">
-                        PDF Path or Google Drive URL *
+                        Google Drive Link *
                       </label>
                       <input
-                        type="text"
+                        type="url"
                         required
-                        placeholder="/papers/paper1.pdf or https://drive.google.com/..."
-                        value={newPaper.pdfUrl}
-                        onChange={(e) => setNewPaper({ ...newPaper, pdfUrl: e.target.value })}
+                        placeholder="https://drive.google.com/file/d/.../view?usp=sharing"
+                        value={newPaper.driveUrl}
+                        onChange={(e) => setNewPaper({ ...newPaper, driveUrl: e.target.value })}
                         className="w-full px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-sm focus:outline-none focus:border-[#064e3b]"
                       />
                     </div>
                   </div>
 
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Abstract / Description *
-                    </label>
-                    <textarea
-                      required
-                      rows={3}
-                      placeholder="Summary of the paper's thesis and juridical findings..."
-                      value={newPaper.abstract}
-                      onChange={(e) => setNewPaper({ ...newPaper, abstract: e.target.value })}
-                      className="w-full px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-sm focus:outline-none focus:border-[#064e3b]"
+                  <div className="flex items-center gap-2 pt-2">
+                    <input
+                      type="checkbox"
+                      id="paperFeatured"
+                      checked={newPaper.featured}
+                      onChange={(e) => setNewPaper({ ...newPaper, featured: e.target.checked })}
+                      className="w-4 h-4 rounded text-[#064e3b] focus:ring-[#064e3b]"
                     />
+                    <label htmlFor="paperFeatured" className="text-xs font-bold text-slate-800">
+                      Show on Main Page
+                    </label>
                   </div>
 
                   <button
                     type="submit"
-                    className="px-6 py-3 rounded-2xl bg-[#064e3b] text-white font-bold text-xs uppercase tracking-wider hover:bg-[#043d2e] shadow-md"
+                    className="px-6 py-2.5 rounded-2xl bg-[#064e3b] text-white font-bold text-xs uppercase tracking-wider hover:bg-[#043d2e] shadow-xs"
                   >
-                    Save Research Paper
+                    Save Paper
                   </button>
                 </form>
               </div>
 
               {/* Current Papers List */}
               <div className="space-y-4">
-                <h3 className="text-base font-bold text-slate-900">
-                  Current Research Papers ({papers.length})
-                </h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-base font-bold text-slate-900">
+                    Research Papers ({papers.length})
+                  </h3>
+                  <span className="text-xs text-slate-500 font-medium">
+                    Main Page: <strong className="text-[#064e3b]">{featuredPapersCount} selected</strong>
+                  </span>
+                </div>
+
                 <div className="grid grid-cols-1 gap-3">
                   {papers.map((p) => (
                     <div
                       key={p.id}
-                      className="p-5 rounded-3xl bg-white border border-slate-200 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+                      className="p-4 rounded-3xl bg-white border border-slate-200 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
                     >
                       <div className="overflow-hidden">
                         <div className="flex items-center gap-2 mb-1">
@@ -858,6 +933,12 @@ ${gallery
                             {p.department}
                           </span>
                           <span className="text-xs font-mono text-slate-400">{p.pages} Pages</span>
+                          {p.featured && (
+                            <span className="text-[10px] font-black text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md flex items-center gap-1">
+                              <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
+                              Main Page
+                            </span>
+                          )}
                         </div>
                         <h4 className="text-base font-bold text-slate-900 truncate">
                           {p.title}
@@ -866,15 +947,30 @@ ${gallery
                       </div>
 
                       <div className="flex items-center gap-2 shrink-0">
+                        {/* Toggle Featured Button */}
+                        <button
+                          onClick={() => handleTogglePaperFeatured(p.id, p.featured)}
+                          className={`p-2 rounded-xl text-xs font-bold flex items-center gap-1 transition-colors ${
+                            p.featured
+                              ? "bg-amber-100 text-amber-800 hover:bg-amber-200"
+                              : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                          }`}
+                          title="Toggle Main Page"
+                        >
+                          {p.featured ? <Star className="w-4 h-4 fill-amber-600 text-amber-600" /> : <StarOff className="w-4 h-4" />}
+                          <span className="hidden sm:inline">{p.featured ? "Featured" : "Feature"}</span>
+                        </button>
+
                         <a
-                          href={p.pdfUrl}
+                          href={p.driveUrl}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="p-2 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-100"
-                          title="Open PDF"
+                          title="Open Drive Link"
                         >
                           <ExternalLink className="w-4 h-4" />
                         </a>
+
                         <button
                           onClick={() => handleDeletePaper(p.id)}
                           className="p-2 rounded-xl text-rose-600 hover:bg-rose-50"
@@ -890,14 +986,14 @@ ${gallery
             </div>
           )}
 
-          {/* TAB 4: GALLERY */}
+          {/* TAB 4: GALLERY (GOOGLE DRIVE LINK ONLY & TOP 5 SELECTION) */}
           {activeTab === "gallery" && (
             <div className="space-y-8">
               {/* Add Gallery Form */}
               <div className="p-6 sm:p-8 rounded-3xl bg-white border border-slate-200 shadow-sm">
                 <h3 className="text-lg font-black text-slate-900 tracking-tight mb-4 flex items-center gap-2">
                   <PlusCircle className="w-5 h-5 text-[#064e3b]" />
-                  <span>Add New Photo to Gallery</span>
+                  <span>Add Gallery Photo (Drive Link)</span>
                 </h3>
 
                 <form onSubmit={handleAddGallery} className="space-y-4">
@@ -909,7 +1005,7 @@ ${gallery
                       <input
                         type="text"
                         required
-                        placeholder="e.g. Inaugural Address Audience"
+                        placeholder="e.g. Inaugural Plenary Hall"
                         value={newGallery.title}
                         onChange={(e) => setNewGallery({ ...newGallery, title: e.target.value })}
                         className="w-full px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-sm focus:outline-none focus:border-[#064e3b]"
@@ -922,7 +1018,7 @@ ${gallery
                       </label>
                       <select
                         value={newGallery.category}
-                        onChange={(e) => setNewGallery({ ...newGallery, category: e.target.value as any })}
+                        onChange={(e) => setNewGallery({ ...newGallery, category: e.target.value })}
                         className="w-full px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-700 focus:outline-none focus:border-[#064e3b]"
                       >
                         <option value="Inaugural">Inaugural</option>
@@ -935,14 +1031,14 @@ ${gallery
 
                     <div className="sm:col-span-2">
                       <label className="block text-xs font-bold text-slate-700 mb-1">
-                        Image URL or Local Path *
+                        Google Drive Image Link *
                       </label>
                       <input
-                        type="text"
+                        type="url"
                         required
-                        placeholder="/img1.png, /poster.jpg or https://..."
-                        value={newGallery.imageUrl}
-                        onChange={(e) => setNewGallery({ ...newGallery, imageUrl: e.target.value })}
+                        placeholder="https://drive.google.com/file/d/.../view?usp=sharing"
+                        value={newGallery.driveUrl}
+                        onChange={(e) => setNewGallery({ ...newGallery, driveUrl: e.target.value })}
                         className="w-full px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-sm focus:outline-none focus:border-[#064e3b]"
                       />
                     </div>
@@ -950,86 +1046,98 @@ ${gallery
 
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Caption
+                      Caption (Optional)
                     </label>
                     <input
                       type="text"
-                      placeholder="Brief caption for the photo..."
+                      placeholder="Brief caption..."
                       value={newGallery.caption}
                       onChange={(e) => setNewGallery({ ...newGallery, caption: e.target.value })}
                       className="w-full px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-sm focus:outline-none focus:border-[#064e3b]"
                     />
                   </div>
 
+                  <div className="flex items-center gap-2 pt-2">
+                    <input
+                      type="checkbox"
+                      id="galleryFeatured"
+                      checked={newGallery.featured}
+                      onChange={(e) => setNewGallery({ ...newGallery, featured: e.target.checked })}
+                      className="w-4 h-4 rounded text-[#064e3b] focus:ring-[#064e3b]"
+                    />
+                    <label htmlFor="galleryFeatured" className="text-xs font-bold text-slate-800">
+                      Show in Top 5 (Main Page)
+                    </label>
+                  </div>
+
                   <button
                     type="submit"
-                    className="px-6 py-3 rounded-2xl bg-[#064e3b] text-white font-bold text-xs uppercase tracking-wider hover:bg-[#043d2e] shadow-md"
+                    className="px-6 py-2.5 rounded-2xl bg-[#064e3b] text-white font-bold text-xs uppercase tracking-wider hover:bg-[#043d2e] shadow-xs"
                   >
                     Save Photo
                   </button>
                 </form>
               </div>
 
-              {/* Current Gallery Grid */}
+              {/* Gallery Grid with Top 5 Selection Toggle */}
               <div className="space-y-4">
-                <h3 className="text-base font-bold text-slate-900">
-                  Current Photos ({gallery.length})
-                </h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-base font-bold text-slate-900">
+                    Gallery Collection ({gallery.length})
+                  </h3>
+                  <span className="text-xs text-slate-500 font-medium">
+                    Top 5 on Main Page: <strong className="text-[#064e3b]">{featuredGalleryCount} selected</strong>
+                  </span>
+                </div>
+
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                   {gallery.map((g) => (
                     <div
                       key={g.id}
-                      className="group relative rounded-3xl bg-white border border-slate-200 overflow-hidden shadow-xs"
+                      className="group relative rounded-3xl bg-white border border-slate-200 overflow-hidden shadow-xs flex flex-col justify-between"
                     >
                       <div className="relative aspect-[4/3] bg-slate-100">
-                        <Image src={g.imageUrl} alt={g.title} fill className="object-cover" />
+                        {/* Google Drive Image Embed */}
+                        <Image
+                          src={getDriveImageUrl(g.driveUrl)}
+                          alt={g.title}
+                          fill
+                          className="object-cover"
+                        />
                         <button
                           onClick={() => handleDeleteGallery(g.id)}
-                          className="absolute top-2 right-2 p-1.5 rounded-xl bg-black/60 text-rose-400 hover:text-white hover:bg-rose-600 transition-colors"
+                          className="absolute top-2 right-2 p-1.5 rounded-xl bg-black/60 text-rose-400 hover:text-white hover:bg-rose-600 transition-colors z-10"
                           title="Delete Photo"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
+
                       <div className="p-3">
-                        <span className="text-[10px] font-bold text-[#064e3b] uppercase">
-                          {g.category}
-                        </span>
-                        <h4 className="text-xs font-bold text-slate-900 truncate mt-0.5">
+                        <div className="flex items-center justify-between gap-1 mb-1">
+                          <span className="text-[10px] font-bold text-[#064e3b] uppercase">
+                            {g.category}
+                          </span>
+                          <button
+                            onClick={() => handleToggleGalleryFeatured(g.id, g.featured)}
+                            className={`p-1 rounded-md text-[10px] font-bold flex items-center gap-1 ${
+                              g.featured
+                                ? "bg-amber-100 text-amber-800"
+                                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                            }`}
+                            title="Toggle Top 5"
+                          >
+                            <Star className={`w-3 h-3 ${g.featured ? "fill-amber-500 text-amber-500" : ""}`} />
+                            <span>{g.featured ? "Top 5" : "Off"}</span>
+                          </button>
+                        </div>
+                        <h4 className="text-xs font-bold text-slate-900 truncate">
                           {g.title}
                         </h4>
                       </div>
                     </div>
                   ))}
                 </div>
-              </div>
-            </div>
-          )}
-
-          {/* TAB 5: SQL EXPORTER */}
-          {activeTab === "sql" && (
-            <div className="space-y-6">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div>
-                  <h2 className="text-2xl font-black text-slate-900 tracking-tight">
-                    Supabase SQL Sync Script
-                  </h2>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    Copy and run these SQL statements directly inside your Supabase SQL Editor.
-                  </p>
-                </div>
-
-                <button
-                  onClick={copyToClipboard}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-[#064e3b] text-white text-xs font-bold uppercase tracking-wider hover:bg-[#043d2e] shadow-md transition-all"
-                >
-                  {copiedSql ? <Check className="w-4 h-4 text-emerald-300" /> : <Copy className="w-4 h-4" />}
-                  <span>{copiedSql ? "Copied to Clipboard!" : "Copy SQL Script"}</span>
-                </button>
-              </div>
-
-              <div className="relative rounded-3xl bg-slate-950 p-6 text-emerald-400 font-mono text-xs overflow-x-auto max-h-[550px] border border-slate-800 shadow-2xl">
-                <pre>{generatedSql}</pre>
               </div>
             </div>
           )}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -11,18 +11,29 @@ import {
   ChevronLeft,
   ChevronRight
 } from "lucide-react";
-import { GALLERY_IMAGES } from "@/data/conferenceData";
+import { GalleryData } from "@/lib/db";
+import { getDriveImageUrl } from "@/lib/driveUtils";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import InstagramFloatingButton from "@/components/InstagramFloatingButton";
 
 export default function GalleryPage() {
+  const [galleryItems, setGalleryItems] = useState<GalleryData[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
-  const categories = ["All", "Inaugural", "Academic Sessions", "Dignitaries", "Campus Life"];
+  const categories = ["All", "Inaugural", "Academic Sessions", "Dignitaries", "Audience", "Campus Life"];
 
-  const filteredImages = GALLERY_IMAGES.filter((img) => {
+  useEffect(() => {
+    fetch("/api/gallery", { cache: "no-store" })
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) setGalleryItems(data);
+      })
+      .catch((err) => console.error(err));
+  }, []);
+
+  const filteredImages = galleryItems.filter((img) => {
     return selectedCategory === "All" || img.category === selectedCategory;
   });
 
@@ -68,7 +79,7 @@ export default function GalleryPage() {
             Conference &amp; Campus <span className="text-[#047857]">Image Gallery</span>
           </h1>
           <p className="mt-3 text-sm sm:text-base text-slate-600 max-w-3xl font-normal">
-            A photographic showcase celebrating the vibrant moments of IFC Season 1, the academic rigor of Wafy Campus Kalikkavu, and the scholars of Usrah and Muamalah departments.
+            A photographic showcase celebrating the vibrant moments of IFC Season 1, the academic rigor of Wafy Campus kalikavu, and the scholars of Usrah and Muamalah departments.
           </p>
         </div>
 
@@ -98,7 +109,7 @@ export default function GalleryPage() {
               className="group relative rounded-3xl overflow-hidden aspect-[4/3] bg-white border border-slate-200 hover:border-emerald-500/50 transition-all duration-300 shadow-sm hover:shadow-md cursor-pointer"
             >
               <Image
-                src={img.imageUrl}
+                src={getDriveImageUrl(img.driveUrl)}
                 alt={img.title}
                 fill
                 priority={idx < 4}
@@ -117,9 +128,11 @@ export default function GalleryPage() {
                 <h3 className="text-base font-bold text-white group-hover:text-emerald-300 transition-colors leading-snug">
                   {img.title}
                 </h3>
-                <p className="text-xs text-slate-200 mt-1 line-clamp-1">
-                  {img.caption}
-                </p>
+                {img.caption && (
+                  <p className="text-xs text-slate-200 mt-1 line-clamp-1">
+                    {img.caption}
+                  </p>
+                )}
               </div>
 
               <div className="absolute top-4 right-4 w-9 h-9 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
@@ -160,7 +173,7 @@ export default function GalleryPage() {
           <div className="relative max-w-5xl w-full max-h-[90vh] flex flex-col items-center">
             <div className="relative w-full h-[65vh] sm:h-[75vh] rounded-2xl overflow-hidden border border-white/20 shadow-2xl">
               <Image
-                src={filteredImages[lightboxIndex].imageUrl}
+                src={getDriveImageUrl(filteredImages[lightboxIndex].driveUrl)}
                 alt={filteredImages[lightboxIndex].title}
                 fill
                 className="object-contain"
@@ -174,9 +187,11 @@ export default function GalleryPage() {
               <h2 className="text-xl sm:text-2xl font-bold text-white mt-1">
                 {filteredImages[lightboxIndex].title}
               </h2>
-              <p className="text-sm text-slate-300 mt-1 max-w-2xl mx-auto">
-                {filteredImages[lightboxIndex].caption}
-              </p>
+              {filteredImages[lightboxIndex].caption && (
+                <p className="text-sm text-slate-300 mt-1 max-w-2xl mx-auto">
+                  {filteredImages[lightboxIndex].caption}
+                </p>
+              )}
             </div>
           </div>
         </div>

@@ -27,14 +27,14 @@ export default function Footer() {
                   INTERNATIONAL FIQH CONFERENCE
                 </span>
                 <span className="text-xs font-bold text-emerald-300 tracking-widest uppercase">
-                  SEASON 2 • WAFY CAMPUS KALIKKAVU
+                  SEASON 2 • WAFY CAMPUS kalikavu
                 </span>
               </div>
             </div>
 
             <div className="p-4 rounded-2xl bg-[#043d2e] border border-emerald-700/80">
               <div className="font-arabic text-xl text-white leading-relaxed mb-1 font-medium">
-                كلية الشريعة الإسلامية - جامعة وافي كليكافو
+                كلية الشريعة الإسلامية - حرم الوافي الجامعي
               </div>
               <p className="text-xs text-emerald-100/80 leading-relaxed font-normal">
                 Faculty of Islamic Jurisprudence under the Coordination of Islamic Colleges (CIC), nurturing scholarly leadership in contemporary Muslim Personal Law (Usrah) and Commercial Jurisprudence (Muamalah).
@@ -42,7 +42,7 @@ export default function Footer() {
             </div>
 
             <div className="text-xs font-medium text-emerald-200">
-              Wafy Campus Kalikkavu • Malappuram District, Kerala
+              Wafy Campus kalikavu • Malappuram District, Kerala
             </div>
           </div>
 
@@ -107,8 +107,8 @@ export default function Footer() {
 
               <div className="flex items-center gap-2.5">
                 <Mail className="w-4 h-4 text-emerald-300 shrink-0" />
-                <a href="mailto:shareeah@wafycampuskalikkavu.edu" className="hover:text-white transition-colors truncate">
-                  dept.ofshareea@wafycampuskalikkavu.edu
+                <a href="mailto:shareeah@wafycampuskalikavu.edu" className="hover:text-white transition-colors truncate">
+                  dept.ofshareea@wafycampuskalikavu.edu
                 </a>
               </div>
 
@@ -144,7 +144,7 @@ export default function Footer() {
         {/* Bottom Bar: Copyright & Accreditation */}
         <div className="pt-8 border-t border-emerald-700/70 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-emerald-200/90">
           <div>
-            © 2026 Department of Sharee&apos;ah, Wafy Campus Kalikkavu. All Rights Reserved.
+            © 2026 Department of Sharee&apos;ah, Wafy Campus kalikavu. All Rights Reserved.
           </div>
           <div className="flex items-center gap-3">
             <span className="px-2.5 py-0.5 rounded-full bg-[#043d2e] border border-emerald-700 text-[10px] font-mono text-emerald-200">

@@ -1,17 +1,35 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Play, ExternalLink, ArrowRight, Video, Clock } from "lucide-react";
-import { FEATURED_VIDEOS, VideoItem } from "@/data/conferenceData";
+import { VideoData } from "@/lib/db";
+import { getYoutubeThumbnail } from "@/lib/driveUtils";
 import VideoModal from "./VideoModal";
 
 export default function VideoShowcase() {
-  const [selectedVideo, setSelectedVideo] = useState<VideoItem | null>(null);
-  const featuredFive = FEATURED_VIDEOS.slice(0, 5);
-  const leadVideo = featuredFive[0];
-  const sideVideos = featuredFive.slice(1);
+  const [allVideos, setAllVideos] = useState<VideoData[]>([]);
+  const [topFive, setTopFive] = useState<VideoData[]>([]);
+  const [selectedVideo, setSelectedVideo] = useState<any>(null);
+
+  useEffect(() => {
+    fetch("/api/videos", { cache: "no-store" })
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setAllVideos(data);
+          // Prioritize featured ones selected by admin
+          const featured = data.filter((v: VideoData) => v.featured);
+          const finalFive = featured.length >= 5 ? featured.slice(0, 5) : data.slice(0, 5);
+          setTopFive(finalFive);
+        }
+      })
+      .catch((err) => console.error("Error loading videos:", err));
+  }, []);
+
+  const leadVideo = topFive[0];
+  const sideVideos = topFive.slice(1, 5);
 
   return (
     <>
@@ -37,12 +55,12 @@ export default function VideoShowcase() {
               href="/videos"
               className="inline-flex items-center gap-2 px-6 py-3 rounded-full font-bold text-xs sm:text-sm uppercase tracking-wider text-white bg-[#047857] hover:bg-[#065f46] shadow-md shadow-[#047857]/20 transition-all duration-300 transform hover:-translate-y-0.5 shrink-0 self-start md:self-auto"
             >
-              <span>View All Videos ({FEATURED_VIDEOS.length})</span>
+              <span>View All Videos ({allVideos.length})</span>
               <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
 
-          {/* Layout: 1 Lead Video + 4 Companion Grid */}
+          {/* Layout: 1 Lead Video + Companion Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             {/* Lead Large Video Card */}
             {leadVideo && (
@@ -50,10 +68,16 @@ export default function VideoShowcase() {
                 {/* Thumbnail Container */}
                 <div
                   className="relative w-full aspect-video bg-black overflow-hidden cursor-pointer"
-                  onClick={() => setSelectedVideo(leadVideo)}
+                  onClick={() =>
+                    setSelectedVideo({
+                      ...leadVideo,
+                      thumbnailUrl: getYoutubeThumbnail(leadVideo.youtubeId),
+                      description: `${leadVideo.speaker} - ${leadVideo.designation}`
+                    })
+                  }
                 >
                   <Image
-                    src={leadVideo.thumbnailUrl}
+                    src={getYoutubeThumbnail(leadVideo.youtubeId)}
                     alt={leadVideo.title}
                     fill
                     className="object-cover group-hover:scale-105 transition-transform duration-500"
@@ -87,20 +111,21 @@ export default function VideoShowcase() {
                 <div className="p-6 sm:p-8">
                   <div className="flex items-center justify-between text-xs text-slate-500 font-semibold mb-2">
                     <span>{leadVideo.speaker} • {leadVideo.designation}</span>
-                    <span className="text-[#047857] font-bold">{leadVideo.views}</span>
                   </div>
 
-                  <h3 className="text-xl sm:text-2xl font-bold text-slate-900 group-hover:text-[#047857] transition-colors leading-snug mb-3">
+                  <h3 className="text-xl sm:text-2xl font-bold text-slate-900 group-hover:text-[#047857] transition-colors leading-snug mb-4">
                     {leadVideo.title}
                   </h3>
 
-                  <p className="text-xs sm:text-sm text-slate-600 leading-relaxed mb-6 font-normal">
-                    {leadVideo.description}
-                  </p>
-
                   <div className="flex flex-wrap items-center gap-3 pt-4 border-t border-slate-100">
                     <button
-                      onClick={() => setSelectedVideo(leadVideo)}
+                      onClick={() =>
+                        setSelectedVideo({
+                          ...leadVideo,
+                          thumbnailUrl: getYoutubeThumbnail(leadVideo.youtubeId),
+                          description: `${leadVideo.speaker} - ${leadVideo.designation}`
+                        })
+                      }
                       className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider text-white bg-[#047857] hover:bg-[#065f46] shadow-md shadow-[#047857]/20 transition-all"
                     >
                       <Play className="w-4 h-4 fill-current" />
@@ -121,7 +146,7 @@ export default function VideoShowcase() {
               </div>
             )}
 
-            {/* 4 Companion Video Cards */}
+            {/* Companion Video Cards */}
             <div className="lg:col-span-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
               {sideVideos.map((video) => (
                 <div
@@ -131,10 +156,16 @@ export default function VideoShowcase() {
                   {/* Miniature Thumbnail */}
                   <div
                     className="relative w-full sm:w-40 aspect-video rounded-2xl overflow-hidden bg-black shrink-0 cursor-pointer"
-                    onClick={() => setSelectedVideo(video)}
+                    onClick={() =>
+                      setSelectedVideo({
+                        ...video,
+                        thumbnailUrl: getYoutubeThumbnail(video.youtubeId),
+                        description: `${video.speaker} - ${video.designation}`
+                      })
+                    }
                   >
                     <Image
-                      src={video.thumbnailUrl}
+                      src={getYoutubeThumbnail(video.youtubeId)}
                       alt={video.title}
                       fill
                       className="object-cover group-hover:scale-105 transition-transform duration-300"
@@ -157,13 +188,16 @@ export default function VideoShowcase() {
                         <span className="text-[10px] font-bold uppercase tracking-wider text-[#047857] px-2 py-0.5 rounded bg-emerald-50">
                           {video.category}
                         </span>
-                        <span className="text-[10px] text-slate-400 font-medium">
-                          {video.views}
-                        </span>
                       </div>
                       <h4
                         className="text-sm font-bold text-slate-900 group-hover:text-[#047857] transition-colors leading-snug line-clamp-2 cursor-pointer"
-                        onClick={() => setSelectedVideo(video)}
+                        onClick={() =>
+                          setSelectedVideo({
+                            ...video,
+                            thumbnailUrl: getYoutubeThumbnail(video.youtubeId),
+                            description: `${video.speaker} - ${video.designation}`
+                          })
+                        }
                       >
                         {video.title}
                       </h4>
@@ -174,7 +208,13 @@ export default function VideoShowcase() {
 
                     <div className="flex items-center gap-3 mt-3 pt-2 border-t border-slate-100">
                       <button
-                        onClick={() => setSelectedVideo(video)}
+                        onClick={() =>
+                          setSelectedVideo({
+                            ...video,
+                            thumbnailUrl: getYoutubeThumbnail(video.youtubeId),
+                            description: `${video.speaker} - ${video.designation}`
+                          })
+                        }
                         className="text-[11px] font-bold text-[#047857] hover:underline"
                       >
                         Watch Now

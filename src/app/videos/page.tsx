@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -11,24 +11,34 @@ import {
   Clock,
   Video
 } from "lucide-react";
-import { FEATURED_VIDEOS, VideoItem } from "@/data/conferenceData";
+import { VideoData } from "@/lib/db";
+import { getYoutubeThumbnail } from "@/lib/driveUtils";
 import VideoModal from "@/components/VideoModal";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import InstagramFloatingButton from "@/components/InstagramFloatingButton";
 
 export default function VideosPage() {
+  const [videos, setVideos] = useState<VideoData[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
-  const [activeVideo, setActiveVideo] = useState<VideoItem | null>(null);
+  const [activeVideo, setActiveVideo] = useState<any>(null);
 
   const categories = ["All", "Inaugural", "Keynote", "Panel Discussion", "Academic Paper", "Valedictory"];
 
-  const filteredVideos = FEATURED_VIDEOS.filter((video) => {
+  useEffect(() => {
+    fetch("/api/videos", { cache: "no-store" })
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) setVideos(data);
+      })
+      .catch((err) => console.error(err));
+  }, []);
+
+  const filteredVideos = videos.filter((video) => {
     const matchesSearch =
       video.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      video.speaker.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      video.description.toLowerCase().includes(searchQuery.toLowerCase());
+      video.speaker.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = selectedCategory === "All" || video.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
@@ -59,7 +69,7 @@ export default function VideosPage() {
             IFC Season 1 <span className="text-[#047857]">Broadcasts &amp; Sessions</span>
           </h1>
           <p className="mt-3 text-sm sm:text-base text-slate-600 max-w-3xl font-normal">
-            Stream full sessions, paper presentations, and keynote lectures from the International Fiqh Conference at Wafy Campus Kalikkavu. Watch online or redirect directly to YouTube.
+            Stream full sessions, paper presentations, and keynote lectures from the International Fiqh Conference at Wafy Campus kalikavu. Watch online or redirect directly to YouTube.
           </p>
         </div>
 
@@ -70,10 +80,10 @@ export default function VideosPage() {
             <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="Search by topic, speaker name, or theme..."
+              placeholder="Search by topic or speaker name..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 text-xs sm:text-sm focus:outline-none focus:border-[#047857] focus:ring-2 focus:ring-emerald-500/10"
+              className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 text-xs sm:text-sm focus:outline-none focus:border-[#047857]"
             />
           </div>
 
@@ -106,10 +116,16 @@ export default function VideosPage() {
                 {/* Thumbnail */}
                 <div
                   className="relative w-full aspect-video bg-black overflow-hidden cursor-pointer"
-                  onClick={() => setActiveVideo(video)}
+                  onClick={() =>
+                    setActiveVideo({
+                      ...video,
+                      thumbnailUrl: getYoutubeThumbnail(video.youtubeId),
+                      description: `${video.speaker} • ${video.designation}`
+                    })
+                  }
                 >
                   <Image
-                    src={video.thumbnailUrl}
+                    src={getYoutubeThumbnail(video.youtubeId)}
                     alt={video.title}
                     fill
                     className="object-cover group-hover:scale-105 transition-transform duration-500"
@@ -142,12 +158,18 @@ export default function VideosPage() {
                   </div>
                   <h3
                     className="text-base sm:text-lg font-bold text-slate-900 group-hover:text-[#047857] transition-colors leading-snug line-clamp-2 cursor-pointer mb-2"
-                    onClick={() => setActiveVideo(video)}
+                    onClick={() =>
+                      setActiveVideo({
+                        ...video,
+                        thumbnailUrl: getYoutubeThumbnail(video.youtubeId),
+                        description: `${video.speaker} • ${video.designation}`
+                      })
+                    }
                   >
                     {video.title}
                   </h3>
-                  <p className="text-xs text-slate-600 leading-relaxed line-clamp-3 font-normal">
-                    {video.description}
+                  <p className="text-xs text-slate-500 font-normal">
+                    {video.designation}
                   </p>
                 </div>
               </div>
@@ -155,7 +177,13 @@ export default function VideosPage() {
               {/* Bottom Actions */}
               <div className="p-5 sm:p-6 pt-0 flex items-center justify-between border-t border-slate-100">
                 <button
-                  onClick={() => setActiveVideo(video)}
+                  onClick={() =>
+                    setActiveVideo({
+                      ...video,
+                      thumbnailUrl: getYoutubeThumbnail(video.youtubeId),
+                      description: `${video.speaker} • ${video.designation}`
+                    })
+                  }
                   className="text-xs font-bold text-[#047857] hover:underline flex items-center gap-1"
                 >
                   <Play className="w-3.5 h-3.5 fill-current" />

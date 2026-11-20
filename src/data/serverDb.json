@@ -1,0 +1,144 @@
+{
+  "videos": [
+    {
+      "id": "vid-1795200178375",
+      "title": "BNPL In India: A Sharia and Consumer Protection Analysis",
+      "speaker": "Hasan Wafy Mannarkkad",
+      "designation": "Faculty / Research Scholar",
+      "duration": "33:00",
+      "youtubeId": "4R_Sz-jzzVQ",
+      "category": "Academic Paper",
+      "featured": true
+    },
+    {
+      "id": "vid-1",
+      "title": "IFC Season 1 Grand Inaugural Address: Fiqh for Modern Civilisation",
+      "speaker": "Usthad Abdul Hakeem Faizy Adrissery",
+      "designation": "General Secretary, CIC",
+      "duration": "42:15",
+      "youtubeId": "dQw4w9WgXcQ",
+      "category": "Inaugural",
+      "featured": true
+    },
+    {
+      "id": "vid-2",
+      "title": "Islamic Finance Principles: Blueprint for Ethical Economic Growth in India",
+      "speaker": "Dr. Luqmanul Hakeem Azhari",
+      "designation": "Senior Jurisprudence Fellow",
+      "duration": "34:50",
+      "youtubeId": "LXb3EKWsInQ",
+      "category": "Keynote",
+      "featured": true
+    },
+    {
+      "id": "vid-3",
+      "title": "Panel Discussion: Digital Currencies & Modern Contracts Under Shariah Review",
+      "speaker": "Faculty of Muamalah Panel",
+      "designation": "Muamalah Department, Wafy Campus",
+      "duration": "58:10",
+      "youtubeId": "3JZ_D3ELwOQ",
+      "category": "Panel Discussion",
+      "featured": true
+    },
+    {
+      "id": "vid-4",
+      "title": "Contemporary Family Disputes & Mediation Mechanisms in Islamic Jurisprudence",
+      "speaker": "Faculty of Usrah Scholars",
+      "designation": "Usrah Department, Wafy Campus",
+      "duration": "29:45",
+      "youtubeId": "fJ9rUzIMcZQ",
+      "category": "Academic Paper",
+      "featured": true
+    },
+    {
+      "id": "vid-5",
+      "title": "IFC Season 1 Concluding Resolutions & Season 2 Roadmap Announcement",
+      "speaker": "Scholarly Council of Wafy Campus",
+      "designation": "Wafy Campus Kalikavu",
+      "duration": "25:30",
+      "youtubeId": "kXYiU_JCYtU",
+      "category": "Valedictory",
+      "featured": true
+    }
+  ],
+  "papers": [
+    {
+      "id": "paper-1",
+      "title": "Islamic Finance Principles: Strength & Opportunities for India's Ethical Growth",
+      "arabicTitle": "مبادئ التمويل الإسلامي: القوة والفرص للنمو الأخلاقي في الهند",
+      "author": "Dept. of Muamalah Research Collective",
+      "authorRole": "Faculty of Islamic Jurisprudence, Wafy Campus kalikavu",
+      "department": "Muamalah",
+      "year": "2025-2026",
+      "driveUrl": "https://drive.google.com/file/d/1examplePdfPaperOne/view?usp=sharing",
+      "pages": 28,
+      "featured": true
+    },
+    {
+      "id": "paper-2",
+      "title": "Cryptocurrency, CBDCs & Digital Assets in Contemporary Fiqh Deliberations",
+      "arabicTitle": "العملات الرقمية والأصول المشفرة في ميزان الفقه الإسلامي المعاصر",
+      "author": "Scholars of MUL 2 (Muamalah Final Year)",
+      "authorRole": "Postgraduate Juridical Research Group",
+      "department": "Muamalah",
+      "year": "2025",
+      "driveUrl": "https://drive.google.com/file/d/1examplePdfPaperTwo/view?usp=sharing",
+      "pages": 34,
+      "featured": true
+    },
+    {
+      "id": "paper-3",
+      "title": "Mediation & Reconciliation in Modern Marital Disputes: Usrah Jurisprudential Model",
+      "arabicTitle": "التحكيم والإصلاح في النزاعات الأسرية المعاصرة: نموذج كلية الأسرة",
+      "author": "Scholars of USR 2 (Usrah Final Year)",
+      "authorRole": "Family Law & Arbitration Wing",
+      "department": "Usrah",
+      "year": "2025",
+      "driveUrl": "https://drive.google.com/file/d/1examplePdfPaperThree/view?usp=sharing",
+      "pages": 24,
+      "featured": true
+    }
+  ],
+  "gallery": [
+    {
+      "id": "gal-1",
+      "title": "Grand Inaugural Plenary Hall",
+      "category": "Inaugural",
+      "driveUrl": "https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3?auto=format&fit=crop&w=1200&q=80",
+      "caption": "Scholars and delegates filling the main conference auditorium.",
+      "featured": true
+    },
+    {
+      "id": "gal-2",
+      "title": "Keynote Lecture on Contemporary Fiqh",
+      "category": "Academic Sessions",
+      "driveUrl": "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&w=1200&q=80",
+      "caption": "Senior jurists delivering the keynote address on economic principles.",
+      "featured": true
+    },
+    {
+      "id": "gal-3",
+      "title": "Scholarly Research Paper Presentations",
+      "category": "Academic Sessions",
+      "driveUrl": "https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?auto=format&fit=crop&w=1200&q=80",
+      "caption": "Postgraduate scholars of Muamalah & Usrah presenting peer-reviewed research.",
+      "featured": true
+    },
+    {
+      "id": "gal-4",
+      "title": "Dignitaries on the Dais",
+      "category": "Dignitaries",
+      "driveUrl": "https://images.unsplash.com/photo-1475721027785-f74eccf877e2?auto=format&fit=crop&w=1200&q=80",
+      "caption": "Distinguished scholars from CIC and national universities convened on the dais.",
+      "featured": true
+    },
+    {
+      "id": "gal-5",
+      "title": "Wafy Campus Kalikavu Sharee'ah Delegation",
+      "category": "Campus Life",
+      "driveUrl": "https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1200&q=80",
+      "caption": "Student committee of the Sharee'ah Department organizing the event.",
+      "featured": true
+    }
+  ]
+}

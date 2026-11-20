@@ -41,7 +41,7 @@ export const CONFERENCE_INFO = {
   shortName: "IFC",
   edition: "SEASON 2",
   arabicFaculty: "كلية الشريعة الإسلامية",
-  college: "Wafy Campus Kalikkavu",
+  college: "Wafy Campus kalikavu",
   department: "Department of Sharee'ah",
   parentOrg: "Coordination of Islamic Colleges (CIC)",
   themeSeason2: "ISLAMIC FINANCE PRINCIPLES: STRENGTH & OPPORTUNITIES FOR INDIA'S ETHICAL GROWTH",
@@ -70,7 +70,7 @@ export const SHAREEAH_DEPT_INFO = {
   title: "Faculty of Islamic Jurisprudence (كلية الشريعة الإسلامية)",
   duration: "2-Year Advanced Postgraduate Program",
   description:
-    "The Department of Sharee'ah at Wafy Campus Kalikkavu represents the pinnacle of classical Islamic jurisprudence seamlessly integrated with modern legal, commercial, and financial sciences. Spread across two rigorous years of postgraduate research, the department offers specialized streams in Usrah (Family Jurisprudence) and Muamalah (Commercial Law & Islamic Finance).",
+    "The Department of Sharee'ah at Wafy Campus kalikavu represents the pinnacle of classical Islamic jurisprudence seamlessly integrated with modern legal, commercial, and financial sciences. Spread across two rigorous years of postgraduate research, the department offers specialized streams in Usrah (Family Jurisprudence) and Muamalah (Commercial Law & Islamic Finance).",
   specializations: [
     {
       id: "usrah",

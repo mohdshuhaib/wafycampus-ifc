@@ -1,13 +1,13 @@
 -- ==============================================================================
 -- Supabase SQL Schema for IFC Season 2 (International Fiqh Conference)
--- Wafy Campus Kalikkavu - Department of Sharee'ah
+-- Wafy Campus kalikavu - Department of Sharee'ah
 -- Run this directly inside your Supabase SQL Editor
 -- ==============================================================================
 
 -- Enable pgcrypto for password hashing & UUID generation
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
--- 1. ADMIN USERS TABLE (Internal Auth Table)
+-- 1. ADMIN USERS TABLE
 CREATE TABLE IF NOT EXISTS public.admin_users (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   email TEXT UNIQUE NOT NULL,
@@ -27,41 +27,6 @@ VALUES (
 ON CONFLICT (email) 
 DO UPDATE SET password_hash = crypt('ifcadmin@1', gen_salt('bf'));
 
--- (Optional) Create Supabase Auth User in auth.users table if using Supabase Built-in Auth
-DO $$
-DECLARE
-  new_user_id UUID := gen_random_uuid();
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM auth.users WHERE email = 'ifcadmin@gmail.com') THEN
-    INSERT INTO auth.users (
-      id,
-      instance_id,
-      email,
-      encrypted_password,
-      email_confirmed_at,
-      created_at,
-      updated_at,
-      raw_app_meta_data,
-      raw_user_meta_data,
-      is_super_admin,
-      role
-    )
-    VALUES (
-      new_user_id,
-      '00000000-0000-0000-0000-000000000000',
-      'ifcadmin@gmail.com',
-      crypt('ifcadmin@1', gen_salt('bf')),
-      NOW(),
-      NOW(),
-      NOW(),
-      '{"provider":"email","providers":["email"]}',
-      '{"full_name":"IFC Admin"}',
-      false,
-      'authenticated'
-    );
-  END IF;
-END $$;
-
 -- 2. VIDEOS TABLE
 CREATE TABLE IF NOT EXISTS public.videos (
   id TEXT PRIMARY KEY,
@@ -71,25 +36,22 @@ CREATE TABLE IF NOT EXISTS public.videos (
   duration TEXT,
   youtube_id TEXT NOT NULL,
   category TEXT NOT NULL,
-  description TEXT,
-  thumbnail_url TEXT,
-  views TEXT,
   featured BOOLEAN DEFAULT false,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 3. GALLERY TABLE
+-- 3. GALLERY TABLE (Google Drive Images)
 CREATE TABLE IF NOT EXISTS public.gallery (
   id TEXT PRIMARY KEY,
   title TEXT NOT NULL,
   category TEXT NOT NULL,
-  image_url TEXT NOT NULL,
+  drive_url TEXT NOT NULL,
   caption TEXT,
   featured BOOLEAN DEFAULT false,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 4. RESEARCH PAPERS TABLE
+-- 4. RESEARCH PAPERS TABLE (Google Drive PDF Links)
 CREATE TABLE IF NOT EXISTS public.research_papers (
   id TEXT PRIMARY KEY,
   title TEXT NOT NULL,
@@ -98,15 +60,13 @@ CREATE TABLE IF NOT EXISTS public.research_papers (
   author_role TEXT,
   department TEXT NOT NULL,
   year TEXT,
-  abstract TEXT,
-  pdf_url TEXT NOT NULL,
-  download_url TEXT,
+  drive_url TEXT NOT NULL,
   pages INT DEFAULT 1,
   featured BOOLEAN DEFAULT false,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 5. REGISTRATIONS TABLE (FOR SEASON 2 ATTENDEES)
+-- 5. REGISTRATIONS TABLE
 CREATE TABLE IF NOT EXISTS public.registrations (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   full_name TEXT NOT NULL,
@@ -117,6 +77,15 @@ CREATE TABLE IF NOT EXISTS public.registrations (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- ==============================================================================
+-- PERMISSIONS & ACCESS CONTROL (CRITICAL: Grants access to anon & authenticated)
+-- ==============================================================================
+
+GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
+GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO anon, authenticated, service_role;
+
 -- Enable Row Level Security (RLS)
 ALTER TABLE public.videos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.gallery ENABLE ROW LEVEL SECURITY;
@@ -124,14 +93,15 @@ ALTER TABLE public.research_papers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.registrations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.admin_users ENABLE ROW LEVEL SECURITY;
 
--- Allow public read access on media
-CREATE POLICY "Allow public read access on videos" ON public.videos FOR SELECT USING (true);
-CREATE POLICY "Allow public read access on gallery" ON public.gallery FOR SELECT USING (true);
-CREATE POLICY "Allow public read access on research_papers" ON public.research_papers FOR SELECT USING (true);
-CREATE POLICY "Allow public insert on registrations" ON public.registrations FOR INSERT WITH CHECK (true);
+-- Allow public read and write access
+DROP POLICY IF EXISTS "Allow all on videos" ON public.videos;
+CREATE POLICY "Allow all on videos" ON public.videos FOR ALL USING (true) WITH CHECK (true);
 
--- Allow full management for authenticated users / admins
-CREATE POLICY "Allow admin all access on videos" ON public.videos FOR ALL USING (true);
-CREATE POLICY "Allow admin all access on gallery" ON public.gallery FOR ALL USING (true);
-CREATE POLICY "Allow admin all access on research_papers" ON public.research_papers FOR ALL USING (true);
-CREATE POLICY "Allow admin all access on registrations" ON public.registrations FOR ALL USING (true);
+DROP POLICY IF EXISTS "Allow all on gallery" ON public.gallery;
+CREATE POLICY "Allow all on gallery" ON public.gallery FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Allow all on research_papers" ON public.research_papers;
+CREATE POLICY "Allow all on research_papers" ON public.research_papers FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Allow all on registrations" ON public.registrations;
+CREATE POLICY "Allow all on registrations" ON public.registrations FOR ALL USING (true) WITH CHECK (true);

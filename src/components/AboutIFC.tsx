@@ -13,7 +13,7 @@ export default function AboutIFC() {
           <div className="flex flex-wrap items-center justify-center gap-3 mb-8">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-[#047857] text-xs font-black uppercase tracking-widest shadow-xs">
               <Sparkles className="w-3.5 h-3.5 text-[#059669]" />
-              <span>Wafy Campus Kalikkavu • Faculty of Islamic Jurisprudence</span>
+              <span>Wafy Campus kalikavu • Faculty of Islamic Jurisprudence</span>
             </div>
 
             <div className="font-arabic text-xl text-[#047857] font-medium tracking-wide">

@@ -17,7 +17,7 @@ export default function RegistrationSection() {
           </h2>
 
           <p className="mt-3 text-sm sm:text-base text-slate-600 max-w-xl mx-auto font-normal">
-            Registration for delegates, scholars, and students for the upcoming Season 2 at Wafy Campus Kalikkavu.
+            Registration for delegates, scholars, and students for the upcoming Season 2 at Wafy Campus Kalikavu.
           </p>
         </div>
 

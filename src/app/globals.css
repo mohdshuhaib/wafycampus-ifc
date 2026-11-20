@@ -1,31 +1,29 @@
 @import "tailwindcss";
 
-@layer base {
-  :root {
-    --bg-primary: #f5f5f7;
-    --bg-secondary: #ffffff;
-    --bg-card: #ffffff;
-    --text-primary: #1d1d1f;
-    --text-secondary: #6e6e73;
-    --text-muted: #86868b;
-    --accent-emerald: #059669;
-    --accent-emerald-light: #10b981;
-    --accent-emerald-dark: #064e3b;
-    --accent-gold: #d97706;
-  }
+:root {
+  --bg-primary: #f5f5f7;
+  --bg-secondary: #ffffff;
+  --bg-card: #ffffff;
+  --text-primary: #1d1d1f;
+  --text-secondary: #6e6e73;
+  --text-muted: #86868b;
+  --accent-emerald: #059669;
+  --accent-emerald-light: #10b981;
+  --accent-emerald-dark: #064e3b;
+  --accent-gold: #d97706;
+}
 
-  html {
-    scroll-behavior: smooth;
-    color-scheme: light;
-  }
+html {
+  scroll-behavior: smooth;
+  color-scheme: light;
+}
 
-  body {
-    background-color: #f5f5f7;
-    color: #1d1d1f;
-    overflow-x: hidden;
-    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
-    -webkit-font-smoothing: antialiased;
-  }
+body {
+  background-color: #f5f5f7;
+  color: #1d1d1f;
+  overflow-x: hidden;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  -webkit-font-smoothing: antialiased;
 }
 
 /* Custom Scrollbar (Clean Apple Minimal Style) */

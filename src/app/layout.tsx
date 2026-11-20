@@ -13,15 +13,15 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://ifc.wafycampuskalikkavu.edu"),
-  title: "IFC Season 2 | International Fiqh Conference - Wafy Campus Kalikkavu",
+  metadataBase: new URL("https://ifc.wafycampuskalikavu.edu"),
+  title: "IFC Season 2 | International Fiqh Conference - Wafy Campus Kalikavu",
   description:
-    "Official portal of the International Fiqh Conference (IFC) Season 2 organized by the Department of Sharee'ah, Wafy Campus Kalikkavu under CIC. Theme: Islamic Finance Principles: Strength & Opportunities for India's Ethical Growth.",
+    "Official portal of the International Fiqh Conference (IFC) Season 2 organized by the Department of Sharee'ah, Wafy Campus kalikavu under CIC. Theme: Islamic Finance Principles: Strength & Opportunities for India's Ethical Growth.",
   keywords: [
     "International Fiqh Conference",
     "IFC Season 2",
-    "Wafy Campus Kalikkavu",
-    "Department of Shareeah",
+    "Wafy Campus Kalikavu",
+    "Department of Shareea",
     "Usrah",
     "Muamalah",
     "Islamic Finance India",
@@ -30,8 +30,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "IFC Season 2 | International Fiqh Conference",
     description:
-      "Islamic Finance Principles: Strength & Opportunities for India's Ethical Growth - Wafy Campus Kalikkavu",
-    images: ["/poster.jpg"]
+      "Islamic Finance Principles: Strength & Opportunities for India's Ethical Growth - Wafy Campus kalikavu"
   }
 };
 
