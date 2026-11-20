@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS public.gallery (
   id TEXT PRIMARY KEY,
   title TEXT NOT NULL,
   category TEXT NOT NULL,
-  drive_url TEXT NOT NULL,
+  image_url TEXT NOT NULL,
   caption TEXT,
   featured BOOLEAN DEFAULT false,
   created_at TIMESTAMPTZ DEFAULT NOW()
@@ -60,7 +60,7 @@ CREATE TABLE IF NOT EXISTS public.research_papers (
   author_role TEXT,
   department TEXT NOT NULL,
   year TEXT,
-  drive_url TEXT NOT NULL,
+  pdf_url TEXT NOT NULL,
   pages INT DEFAULT 1,
   featured BOOLEAN DEFAULT false,
   created_at TIMESTAMPTZ DEFAULT NOW()

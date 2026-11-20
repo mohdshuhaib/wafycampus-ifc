@@ -33,7 +33,7 @@ export default function InstagramFloatingButton() {
         href={CONFERENCE_INFO.instagram.url}
         target="_blank"
         rel="noopener noreferrer"
-        aria-label="Follow Department of Sharee'ah on Instagram"
+        aria-label="Follow Department of Sharee'a on Instagram"
         className="group relative flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-tr from-[#f97316] via-[#ec4899] to-[#8b5cf6] p-[2px] shadow-2xl shadow-[#ec4899]/30 hover:shadow-[#00e575]/50 transition-all duration-300 transform hover:scale-110 active:scale-95"
       >
         {/* Glow Ping Ring */}

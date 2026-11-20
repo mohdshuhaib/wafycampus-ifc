@@ -230,7 +230,8 @@ export default function AdminPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(paperItem)
       });
-      if (res.ok) {
+      const data = await res.json();
+      if (res.ok && data.success) {
         showToast("Research paper added to database");
         setNewPaper({
           title: "",
@@ -244,6 +245,8 @@ export default function AdminPage() {
           featured: true
         });
         loadDatabaseData();
+      } else {
+        showToast(data.error || "Error saving paper to database");
       }
     } catch {
       showToast("Error saving paper");
@@ -301,7 +304,8 @@ export default function AdminPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(galleryItem)
       });
-      if (res.ok) {
+      const data = await res.json();
+      if (res.ok && data.success) {
         showToast("Gallery image added to database");
         setNewGallery({
           title: "",
@@ -311,6 +315,8 @@ export default function AdminPage() {
           featured: true
         });
         loadDatabaseData();
+      } else {
+        showToast(data.error || "Error saving image to database");
       }
     } catch {
       showToast("Error saving photo");

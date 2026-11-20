@@ -42,7 +42,7 @@ export const CONFERENCE_INFO = {
   edition: "SEASON 2",
   arabicFaculty: "كلية الشريعة الإسلامية",
   college: "Wafy Campus kalikavu",
-  department: "Department of Sharee'ah",
+  department: "Department of Sharee'a",
   parentOrg: "Coordination of Islamic Colleges (CIC)",
   themeSeason2: "ISLAMIC FINANCE PRINCIPLES: STRENGTH & OPPORTUNITIES FOR INDIA'S ETHICAL GROWTH",
   themeSeason1: "Contemporary Jurisprudence & Ethical Governance in the Modern World",
@@ -70,7 +70,7 @@ export const SHAREEAH_DEPT_INFO = {
   title: "Faculty of Islamic Jurisprudence (كلية الشريعة الإسلامية)",
   duration: "2-Year Advanced Postgraduate Program",
   description:
-    "The Department of Sharee'ah at Wafy Campus kalikavu represents the pinnacle of classical Islamic jurisprudence seamlessly integrated with modern legal, commercial, and financial sciences. Spread across two rigorous years of postgraduate research, the department offers specialized streams in Usrah (Family Jurisprudence) and Muamalah (Commercial Law & Islamic Finance).",
+    "The Department of Sharee'a at Wafy Campus kalikavu represents the pinnacle of classical Islamic jurisprudence seamlessly integrated with modern legal, commercial, and financial sciences. Spread across two rigorous years of postgraduate research, the department offers specialized streams in Usrah (Family Jurisprudence) and Muamalah (Commercial Law & Islamic Finance).",
   specializations: [
     {
       id: "usrah",
@@ -267,10 +267,10 @@ export const GALLERY_IMAGES: GalleryItem[] = [
   },
   {
     id: "gal-5",
-    title: "Wafy Campus Kalikavu Sharee'ah Department Delegation",
+    title: "Wafy Campus Kalikavu Sharee'a Department Delegation",
     category: "Campus Life",
     imageUrl: "/img5.png",
-    caption: "The student organizing committee of the Sharee'ah Department who orchestrated the success of Season 1.",
+    caption: "The student organizing committee of the Sharee'a Department who orchestrated the success of Season 1.",
     featured: true
   },
   {

@@ -56,80 +56,92 @@ export default function ResearchPapers() {
           </div>
 
           {/* Research Papers Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
-            {papers.map((paper) => (
-              <div
-                key={paper.id}
-                className="group relative flex flex-col justify-between p-6 sm:p-8 rounded-3xl bg-white border border-slate-200 hover:border-emerald-500/50 transition-all duration-300 shadow-[0_4px_20px_-2px_rgba(0,0,0,0.04)] hover:shadow-xl hover:shadow-emerald-500/5"
-              >
-                <div>
-                  {/* Top Badges */}
-                  <div className="flex items-center justify-between gap-3 mb-4">
-                    <div className="flex items-center gap-2">
-                      <span className="px-3 py-1 rounded-md bg-emerald-50 text-[#047857] text-[11px] font-black uppercase tracking-wider border border-emerald-200">
-                        {paper.department}
-                      </span>
-                      <span className="text-xs font-mono text-slate-500 font-bold">
-                        {paper.year}
+          {papers.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
+              {papers.map((paper) => (
+                <div
+                  key={paper.id}
+                  className="group relative flex flex-col justify-between p-6 sm:p-8 rounded-3xl bg-white border border-slate-200 hover:border-emerald-500/50 transition-all duration-300 shadow-[0_4px_20px_-2px_rgba(0,0,0,0.04)] hover:shadow-xl hover:shadow-emerald-500/5"
+                >
+                  <div>
+                    {/* Top Badges */}
+                    <div className="flex items-center justify-between gap-3 mb-4">
+                      <div className="flex items-center gap-2">
+                        <span className="px-3 py-1 rounded-md bg-emerald-50 text-[#047857] text-[11px] font-black uppercase tracking-wider border border-emerald-200">
+                          {paper.department}
+                        </span>
+                        <span className="text-xs font-mono text-slate-500 font-bold">
+                          {paper.year}
+                        </span>
+                      </div>
+                      <span className="text-[11px] font-mono text-slate-400">
+                        {paper.pages} Pages PDF
                       </span>
                     </div>
-                    <span className="text-[11px] font-mono text-slate-400">
-                      {paper.pages} Pages PDF
-                    </span>
-                  </div>
 
-                  {/* Titles */}
-                  <h3 className="text-xl sm:text-2xl font-bold text-slate-900 group-hover:text-[#047857] transition-colors leading-snug mb-2">
-                    {paper.title}
-                  </h3>
+                    {/* Titles */}
+                    <h3 className="text-xl sm:text-2xl font-bold text-slate-900 group-hover:text-[#047857] transition-colors leading-snug mb-2">
+                      {paper.title}
+                    </h3>
 
-                  {paper.arabicTitle && (
-                    <div className="font-arabic text-base sm:text-lg text-emerald-800 mb-3 text-right">
-                      {paper.arabicTitle}
+                    {paper.arabicTitle && (
+                      <div className="font-arabic text-base sm:text-lg text-emerald-800 mb-3 text-right">
+                        {paper.arabicTitle}
+                      </div>
+                    )}
+
+                    {/* Author */}
+                    <div className="text-xs font-semibold text-slate-700 mb-4">
+                      <span className="text-slate-900 font-bold">{paper.author}</span> • {paper.authorRole}
                     </div>
-                  )}
-
-                  {/* Author */}
-                  <div className="text-xs font-semibold text-slate-700 mb-4">
-                    <span className="text-slate-900 font-bold">{paper.author}</span> • {paper.authorRole}
                   </div>
-                </div>
 
-                {/* Card Actions: Read Now & Download */}
-                <div className="pt-6 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={() => setSelectedPaper(paper)}
-                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider text-white bg-[#047857] hover:bg-[#065f46] shadow-md shadow-[#047857]/20 transition-all"
-                    >
-                      <BookOpen className="w-4 h-4" />
-                      <span>Read Paper</span>
-                    </button>
+                  {/* Card Actions: Read Now & Download */}
+                  <div className="pt-6 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => setSelectedPaper(paper)}
+                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider text-white bg-[#047857] hover:bg-[#065f46] shadow-md shadow-[#047857]/20 transition-all"
+                      >
+                        <BookOpen className="w-4 h-4" />
+                        <span>Read Paper</span>
+                      </button>
+
+                      <a
+                        href={getDrivePdfDownloadUrl(paper.driveUrl)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 transition-all"
+                      >
+                        <Download className="w-4 h-4 text-[#047857]" />
+                        <span>Download</span>
+                      </a>
+                    </div>
 
                     <a
-                      href={getDrivePdfDownloadUrl(paper.driveUrl)}
+                      href={paper.driveUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 transition-all"
+                      className="p-2 rounded-lg text-slate-400 hover:text-slate-700 transition-colors"
+                      title="Open in Google Drive"
                     >
-                      <Download className="w-4 h-4 text-[#047857]" />
-                      <span>Download</span>
+                      <ExternalLink className="w-4 h-4" />
                     </a>
                   </div>
-
-                  <a
-                    href={paper.driveUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="p-2 rounded-lg text-slate-400 hover:text-slate-700 transition-colors"
-                    title="Open in Google Drive"
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                  </a>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-16 px-6 rounded-3xl bg-white border border-slate-200 shadow-sm max-w-xl mx-auto">
+              <FileText className="w-12 h-12 text-[#047857]/50 mx-auto mb-4" />
+              <h3 className="text-lg font-bold text-slate-800 mb-1">
+                Research Papers Coming Soon
+              </h3>
+              <p className="text-sm text-slate-500">
+                Official research papers from Usrah &amp; Muamalah departments will appear here once added in the admin panel.
+              </p>
+            </div>
+          )}
         </div>
       </section>
 

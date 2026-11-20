@@ -56,7 +56,7 @@ export default function GalleryShowcase() {
           </div>
 
           {/* 5-Image Mosaic Grid */}
-          {topFive.length > 0 && (
+          {topFive.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-6">
               {/* Image 1: Main Highlight */}
               {topFive[0] && (
@@ -167,6 +167,16 @@ export default function GalleryShowcase() {
                   </div>
                 </div>
               ))}
+            </div>
+          ) : (
+            <div className="text-center py-16 px-6 rounded-3xl bg-slate-50 border border-slate-200 shadow-sm max-w-xl mx-auto">
+              <Images className="w-12 h-12 text-[#047857]/50 mx-auto mb-4" />
+              <h3 className="text-lg font-bold text-slate-800 mb-1">
+                Gallery Moments Coming Soon
+              </h3>
+              <p className="text-sm text-slate-500">
+                Official photos from IFC and campus delegations will appear here once added in the admin panel.
+              </p>
             </div>
           )}
         </div>
