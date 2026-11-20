@@ -5,7 +5,7 @@ import { CONFERENCE_INFO } from "@/data/conferenceData";
 
 export default function AboutIFC() {
   return (
-    <section id="about" className="relative py-20 sm:py-28 bg-[#f5f5f7] overflow-hidden">
+    <section id="about" className="relative pt-24 pb-16 md:py-28 bg-[#f5f5f7] overflow-hidden">
       <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Main Header Container */}
         <div className="p-8 sm:p-14 rounded-3xl bg-white border border-slate-200 shadow-[0_10px_35px_-5px_rgba(0,0,0,0.06)] text-center mb-12">

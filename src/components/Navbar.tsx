@@ -8,9 +8,8 @@ export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navLinks = [
-    { name: "Home", href: "#hero" },
     { name: "About IFC", href: "#about" },
-    { name: "Sharee'a Dept", href: "#department" },
+    { name: "Sharee'ah Dept", href: "#department" },
     { name: "Season 1 Highlights", href: "#videos" },
     { name: "Gallery", href: "#gallery" },
     { name: "Research Papers", href: "#papers" },
