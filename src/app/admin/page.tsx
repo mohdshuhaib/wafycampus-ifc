@@ -11,6 +11,8 @@ import {
   LogOut,
   PlusCircle,
   Trash2,
+  Pencil,
+  X,
   Video,
   FileText,
   Images,
@@ -78,6 +80,11 @@ export default function AdminPage() {
     caption: "",
     featured: true
   });
+
+  // Edit states for modals
+  const [editingVideo, setEditingVideo] = useState<VideoData | null>(null);
+  const [editingPaper, setEditingPaper] = useState<PaperData | null>(null);
+  const [editingGallery, setEditingGallery] = useState<GalleryData | null>(null);
 
   // Load Database Records
   const loadDatabaseData = async () => {
@@ -203,6 +210,35 @@ export default function AdminPage() {
     } catch {}
   };
 
+  // Save Edit Video
+  const handleSaveEditVideo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingVideo) return;
+    const yId = extractYoutubeId(editingVideo.youtubeId) || editingVideo.youtubeId.trim();
+    const updated: VideoData = {
+      ...editingVideo,
+      youtubeId: yId
+    };
+
+    try {
+      const res = await fetch("/api/videos", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updated)
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        showToast("Video updated successfully");
+        setEditingVideo(null);
+        loadDatabaseData();
+      } else {
+        showToast(data.error || "Failed to update video");
+      }
+    } catch {
+      showToast("Error updating video");
+    }
+  };
+
   // Add Paper
   const handleAddPaper = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -281,6 +317,35 @@ export default function AdminPage() {
     } catch {}
   };
 
+  // Save Edit Paper
+  const handleSaveEditPaper = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingPaper) return;
+    const updated: PaperData = {
+      ...editingPaper,
+      driveUrl: editingPaper.driveUrl.trim(),
+      pages: Number(editingPaper.pages) || 1
+    };
+
+    try {
+      const res = await fetch("/api/papers", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updated)
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        showToast("Research paper updated successfully");
+        setEditingPaper(null);
+        loadDatabaseData();
+      } else {
+        showToast(data.error || "Failed to update paper");
+      }
+    } catch {
+      showToast("Error updating paper");
+    }
+  };
+
   // Add Gallery Image
   const handleAddGallery = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -349,6 +414,34 @@ export default function AdminPage() {
         loadDatabaseData();
       }
     } catch {}
+  };
+
+  // Save Edit Gallery
+  const handleSaveEditGallery = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingGallery) return;
+    const updated: GalleryData = {
+      ...editingGallery,
+      driveUrl: editingGallery.driveUrl.trim()
+    };
+
+    try {
+      const res = await fetch("/api/gallery", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updated)
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        showToast("Gallery photo updated successfully");
+        setEditingGallery(null);
+        loadDatabaseData();
+      } else {
+        showToast(data.error || "Failed to update gallery photo");
+      }
+    } catch {
+      showToast("Error updating photo");
+    }
   };
 
   // Unauthenticated Login Form
@@ -787,6 +880,15 @@ export default function AdminPage() {
                           <ExternalLink className="w-4 h-4" />
                         </a>
 
+                        {/* Edit Video Button */}
+                        <button
+                          onClick={() => setEditingVideo(vid)}
+                          className="p-2 rounded-xl text-slate-700 bg-slate-100 hover:bg-slate-200 hover:text-[#064e3b] transition-colors"
+                          title="Edit Video"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+
                         <button
                           onClick={() => handleDeleteVideo(vid.id)}
                           className="p-2 rounded-xl text-rose-600 hover:bg-rose-50"
@@ -977,6 +1079,15 @@ export default function AdminPage() {
                           <ExternalLink className="w-4 h-4" />
                         </a>
 
+                        {/* Edit Paper Button */}
+                        <button
+                          onClick={() => setEditingPaper(p)}
+                          className="p-2 rounded-xl text-slate-700 bg-slate-100 hover:bg-slate-200 hover:text-[#064e3b] transition-colors"
+                          title="Edit Paper"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+
                         <button
                           onClick={() => handleDeletePaper(p.id)}
                           className="p-2 rounded-xl text-rose-600 hover:bg-rose-50"
@@ -1111,6 +1222,13 @@ export default function AdminPage() {
                           className="object-cover"
                         />
                         <button
+                          onClick={() => setEditingGallery(g)}
+                          className="absolute top-2 left-2 p-1.5 rounded-xl bg-black/60 text-white hover:bg-[#064e3b] transition-colors z-10"
+                          title="Edit Photo"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <button
                           onClick={() => handleDeleteGallery(g.id)}
                           className="absolute top-2 right-2 p-1.5 rounded-xl bg-black/60 text-rose-400 hover:text-white hover:bg-rose-600 transition-colors z-10"
                           title="Delete Photo"
@@ -1149,6 +1267,419 @@ export default function AdminPage() {
           )}
         </main>
       </div>
+
+      {/* ============================================================== */}
+      {/* EDIT VIDEO MODAL */}
+      {/* ============================================================== */}
+      {editingVideo && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-xl w-full p-6 sm:p-8 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-emerald-50 text-[#064e3b] flex items-center justify-center font-bold">
+                  <Video className="w-4 h-4" />
+                </div>
+                <h3 className="text-lg font-black text-slate-900">Edit Video Details</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingVideo(null)}
+                className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEditVideo} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Video Title *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editingVideo.title}
+                  onChange={(e) => setEditingVideo({ ...editingVideo, title: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-sm focus:outline-none focus:border-[#064e3b]"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Speaker / Presenter *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editingVideo.speaker}
+                    onChange={(e) => setEditingVideo({ ...editingVideo, speaker: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-sm focus:outline-none focus:border-[#064e3b]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Designation
+                  </label>
+                  <input
+                    type="text"
+                    value={editingVideo.designation}
+                    onChange={(e) => setEditingVideo({ ...editingVideo, designation: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-sm focus:outline-none focus:border-[#064e3b]"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="sm:col-span-1">
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Duration
+                  </label>
+                  <input
+                    type="text"
+                    value={editingVideo.duration}
+                    onChange={(e) => setEditingVideo({ ...editingVideo, duration: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-sm focus:outline-none focus:border-[#064e3b]"
+                  />
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Category
+                  </label>
+                  <select
+                    value={editingVideo.category}
+                    onChange={(e) => setEditingVideo({ ...editingVideo, category: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-700 focus:outline-none focus:border-[#064e3b]"
+                  >
+                    <option value="Inaugural">Inaugural</option>
+                    <option value="Keynote">Keynote</option>
+                    <option value="Panel Discussion">Panel Discussion</option>
+                    <option value="Academic Paper">Academic Paper</option>
+                    <option value="Valedictory">Valedictory</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  YouTube URL or ID *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editingVideo.youtubeId}
+                  onChange={(e) => setEditingVideo({ ...editingVideo, youtubeId: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-sm focus:outline-none focus:border-[#064e3b]"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  type="checkbox"
+                  id="editVideoFeatured"
+                  checked={editingVideo.featured}
+                  onChange={(e) => setEditingVideo({ ...editingVideo, featured: e.target.checked })}
+                  className="w-4 h-4 rounded text-[#064e3b] focus:ring-[#064e3b]"
+                />
+                <label htmlFor="editVideoFeatured" className="text-xs font-bold text-slate-800">
+                  Show in Top 5 (Main Page)
+                </label>
+              </div>
+
+              <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setEditingVideo(null)}
+                  className="px-5 py-2.5 rounded-2xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2.5 rounded-2xl bg-[#064e3b] text-white font-bold text-xs uppercase tracking-wider hover:bg-[#043d2e] shadow-md shadow-[#064e3b]/20 transition-all"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================== */}
+      {/* EDIT PAPER MODAL */}
+      {/* ============================================================== */}
+      {editingPaper && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-xl w-full p-6 sm:p-8 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-emerald-50 text-[#064e3b] flex items-center justify-center font-bold">
+                  <FileText className="w-4 h-4" />
+                </div>
+                <h3 className="text-lg font-black text-slate-900">Edit Research Paper</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingPaper(null)}
+                className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEditPaper} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Paper Title *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editingPaper.title}
+                  onChange={(e) => setEditingPaper({ ...editingPaper, title: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-sm focus:outline-none focus:border-[#064e3b]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Arabic Title (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={editingPaper.arabicTitle || ""}
+                  onChange={(e) => setEditingPaper({ ...editingPaper, arabicTitle: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-sm text-right font-arabic focus:outline-none focus:border-[#064e3b]"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Author / Research Group *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editingPaper.author}
+                    onChange={(e) => setEditingPaper({ ...editingPaper, author: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-sm focus:outline-none focus:border-[#064e3b]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Author Role / Designation
+                  </label>
+                  <input
+                    type="text"
+                    value={editingPaper.authorRole}
+                    onChange={(e) => setEditingPaper({ ...editingPaper, authorRole: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-sm focus:outline-none focus:border-[#064e3b]"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Department
+                  </label>
+                  <select
+                    value={editingPaper.department}
+                    onChange={(e) => setEditingPaper({ ...editingPaper, department: e.target.value })}
+                    className="w-full px-3 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-700 focus:outline-none focus:border-[#064e3b]"
+                  >
+                    <option value="Muamalah">Muamalah</option>
+                    <option value="Usrah">Usrah</option>
+                    <option value="General Fiqh">General Fiqh</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Year
+                  </label>
+                  <input
+                    type="text"
+                    value={editingPaper.year}
+                    onChange={(e) => setEditingPaper({ ...editingPaper, year: e.target.value })}
+                    className="w-full px-3 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-sm focus:outline-none focus:border-[#064e3b]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Pages
+                  </label>
+                  <input
+                    type="number"
+                    value={editingPaper.pages}
+                    onChange={(e) => setEditingPaper({ ...editingPaper, pages: Number(e.target.value) })}
+                    className="w-full px-3 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-sm focus:outline-none focus:border-[#064e3b]"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Google Drive Link *
+                </label>
+                <input
+                  type="url"
+                  required
+                  value={editingPaper.driveUrl}
+                  onChange={(e) => setEditingPaper({ ...editingPaper, driveUrl: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-sm focus:outline-none focus:border-[#064e3b]"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  type="checkbox"
+                  id="editPaperFeatured"
+                  checked={editingPaper.featured}
+                  onChange={(e) => setEditingPaper({ ...editingPaper, featured: e.target.checked })}
+                  className="w-4 h-4 rounded text-[#064e3b] focus:ring-[#064e3b]"
+                />
+                <label htmlFor="editPaperFeatured" className="text-xs font-bold text-slate-800">
+                  Show on Main Page
+                </label>
+              </div>
+
+              <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setEditingPaper(null)}
+                  className="px-5 py-2.5 rounded-2xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2.5 rounded-2xl bg-[#064e3b] text-white font-bold text-xs uppercase tracking-wider hover:bg-[#043d2e] shadow-md shadow-[#064e3b]/20 transition-all"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================== */}
+      {/* EDIT GALLERY MODAL */}
+      {/* ============================================================== */}
+      {editingGallery && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-xl w-full p-6 sm:p-8 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-emerald-50 text-[#064e3b] flex items-center justify-center font-bold">
+                  <Images className="w-4 h-4" />
+                </div>
+                <h3 className="text-lg font-black text-slate-900">Edit Gallery Photo</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingGallery(null)}
+                className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEditGallery} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Photo Title *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editingGallery.title}
+                  onChange={(e) => setEditingGallery({ ...editingGallery, title: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-sm focus:outline-none focus:border-[#064e3b]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Category
+                </label>
+                <select
+                  value={editingGallery.category}
+                  onChange={(e) => setEditingGallery({ ...editingGallery, category: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-700 focus:outline-none focus:border-[#064e3b]"
+                >
+                  <option value="Inaugural">Inaugural</option>
+                  <option value="Academic Sessions">Academic Sessions</option>
+                  <option value="Dignitaries">Dignitaries</option>
+                  <option value="Audience">Audience</option>
+                  <option value="Campus Life">Campus Life</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Google Drive Image Link *
+                </label>
+                <input
+                  type="url"
+                  required
+                  value={editingGallery.driveUrl}
+                  onChange={(e) => setEditingGallery({ ...editingGallery, driveUrl: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-sm focus:outline-none focus:border-[#064e3b]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Caption (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={editingGallery.caption || ""}
+                  onChange={(e) => setEditingGallery({ ...editingGallery, caption: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-sm focus:outline-none focus:border-[#064e3b]"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  type="checkbox"
+                  id="editGalleryFeatured"
+                  checked={editingGallery.featured}
+                  onChange={(e) => setEditingGallery({ ...editingGallery, featured: e.target.checked })}
+                  className="w-4 h-4 rounded text-[#064e3b] focus:ring-[#064e3b]"
+                />
+                <label htmlFor="editGalleryFeatured" className="text-xs font-bold text-slate-800">
+                  Show in Top 5 (Main Page)
+                </label>
+              </div>
+
+              <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setEditingGallery(null)}
+                  className="px-5 py-2.5 rounded-2xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2.5 rounded-2xl bg-[#064e3b] text-white font-bold text-xs uppercase tracking-wider hover:bg-[#043d2e] shadow-md shadow-[#064e3b]/20 transition-all"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

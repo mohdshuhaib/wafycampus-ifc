@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getGallery, addGallery, deleteGallery, toggleGalleryFeatured } from "@/lib/db";
+import { getGallery, addGallery, updateGallery, deleteGallery, toggleGalleryFeatured } from "@/lib/db";
 
 export async function GET() {
   try {
@@ -14,6 +14,17 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     await addGallery(body);
+    return NextResponse.json({ success: true, item: body });
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
+}
+
+export async function PUT(req: Request) {
+  try {
+    const body = await req.json();
+    if (!body.id) return NextResponse.json({ error: "Missing gallery id" }, { status: 400 });
+    await updateGallery(body);
     return NextResponse.json({ success: true, item: body });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });

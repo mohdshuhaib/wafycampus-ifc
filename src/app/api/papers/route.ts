@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getPapers, addPaper, deletePaper, togglePaperFeatured } from "@/lib/db";
+import { getPapers, addPaper, updatePaper, deletePaper, togglePaperFeatured } from "@/lib/db";
 
 export async function GET() {
   try {
@@ -14,6 +14,17 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     await addPaper(body);
+    return NextResponse.json({ success: true, item: body });
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
+}
+
+export async function PUT(req: Request) {
+  try {
+    const body = await req.json();
+    if (!body.id) return NextResponse.json({ error: "Missing paper id" }, { status: 400 });
+    await updatePaper(body);
     return NextResponse.json({ success: true, item: body });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });

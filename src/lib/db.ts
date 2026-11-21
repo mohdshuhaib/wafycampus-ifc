@@ -300,6 +300,37 @@ export async function toggleVideoFeatured(id: string, featured: boolean): Promis
   saveLocalStore(store);
 }
 
+export async function updateVideo(video: VideoData): Promise<void> {
+  if (SUPABASE_URL && SUPABASE_KEY) {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/videos?id=eq.${video.id}`, {
+      method: "PATCH",
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+        "Content-Type": "application/json",
+        Prefer: "return=representation"
+      },
+      body: JSON.stringify({
+        title: video.title,
+        speaker: video.speaker,
+        designation: video.designation,
+        duration: video.duration,
+        youtube_id: video.youtubeId,
+        category: video.category,
+        featured: Boolean(video.featured)
+      })
+    });
+    if (!res.ok) {
+      const err = await res.text();
+      console.error("Supabase video update failed:", res.status, err);
+      throw new Error(`Supabase update error: ${err}`);
+    }
+  }
+  const store = getLocalStore();
+  store.videos = store.videos.map((v) => (v.id === video.id ? video : v));
+  saveLocalStore(store);
+}
+
 // ----------------- PAPERS -----------------
 export async function getPapers(): Promise<PaperData[]> {
   if (SUPABASE_URL && SUPABASE_KEY) {
@@ -430,6 +461,59 @@ export async function togglePaperFeatured(id: string, featured: boolean): Promis
   saveLocalStore(store);
 }
 
+export async function updatePaper(paper: PaperData): Promise<void> {
+  if (SUPABASE_URL && SUPABASE_KEY) {
+    const payload: any = {
+      title: paper.title,
+      arabic_title: paper.arabicTitle || null,
+      author: paper.author,
+      author_role: paper.authorRole || null,
+      department: paper.department,
+      year: paper.year,
+      pdf_url: paper.driveUrl,
+      pages: paper.pages || 1,
+      featured: Boolean(paper.featured)
+    };
+
+    let res = await fetch(`${SUPABASE_URL}/rest/v1/research_papers?id=eq.${paper.id}`, {
+      method: "PATCH",
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+        "Content-Type": "application/json",
+        Prefer: "return=representation"
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      console.warn("Supabase paper update with pdf_url failed, trying drive_url fallback:", errText);
+      payload.drive_url = paper.driveUrl;
+      delete payload.pdf_url;
+      res = await fetch(`${SUPABASE_URL}/rest/v1/research_papers?id=eq.${paper.id}`, {
+        method: "PATCH",
+        headers: {
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${SUPABASE_KEY}`,
+          "Content-Type": "application/json",
+          Prefer: "return=representation"
+        },
+        body: JSON.stringify(payload)
+      });
+    }
+
+    if (!res.ok) {
+      const finalErr = await res.text();
+      console.error("Supabase paper update failed completely:", res.status, finalErr);
+      throw new Error(`Supabase update error: ${finalErr}`);
+    }
+  }
+  const store = getLocalStore();
+  store.papers = store.papers.map((p) => (p.id === paper.id ? paper : p));
+  saveLocalStore(store);
+}
+
 // ----------------- GALLERY -----------------
 export async function getGallery(): Promise<GalleryData[]> {
   if (SUPABASE_URL && SUPABASE_KEY) {
@@ -549,5 +633,54 @@ export async function toggleGalleryFeatured(id: string, featured: boolean): Prom
   }
   const store = getLocalStore();
   store.gallery = store.gallery.map((g) => (g.id === id ? { ...g, featured } : g));
+  saveLocalStore(store);
+}
+
+export async function updateGallery(item: GalleryData): Promise<void> {
+  if (SUPABASE_URL && SUPABASE_KEY) {
+    const payload: any = {
+      title: item.title,
+      category: item.category,
+      image_url: item.driveUrl,
+      caption: item.caption || null,
+      featured: Boolean(item.featured)
+    };
+
+    let res = await fetch(`${SUPABASE_URL}/rest/v1/gallery?id=eq.${item.id}`, {
+      method: "PATCH",
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+        "Content-Type": "application/json",
+        Prefer: "return=representation"
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      console.warn("Supabase gallery update with image_url failed, trying drive_url fallback:", errText);
+      payload.drive_url = item.driveUrl;
+      delete payload.image_url;
+      res = await fetch(`${SUPABASE_URL}/rest/v1/gallery?id=eq.${item.id}`, {
+        method: "PATCH",
+        headers: {
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${SUPABASE_KEY}`,
+          "Content-Type": "application/json",
+          Prefer: "return=representation"
+        },
+        body: JSON.stringify(payload)
+      });
+    }
+
+    if (!res.ok) {
+      const finalErr = await res.text();
+      console.error("Supabase gallery update failed completely:", res.status, finalErr);
+      throw new Error(`Supabase update error: ${finalErr}`);
+    }
+  }
+  const store = getLocalStore();
+  store.gallery = store.gallery.map((g) => (g.id === item.id ? item : g));
   saveLocalStore(store);
 }
