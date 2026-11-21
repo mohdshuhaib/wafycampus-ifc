@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://ifc.wafycampuskalikavu.edu"),
+  metadataBase: new URL("https://wafycampus-ifc.vercel.app"),
   title: "IFC Season 2 | International Fiqh Conference - Wafy Campus Kalikavu",
   description:
     "Official portal of the International Fiqh Conference (IFC) Season 2 organized by the Department of Sharee'a, Wafy Campus kalikavu under CIC. Theme: Islamic Finance Principles: Strength & Opportunities for India's Ethical Growth.",

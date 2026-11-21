@@ -107,8 +107,8 @@ export default function Footer() {
 
               <div className="flex items-center gap-2.5">
                 <Mail className="w-4 h-4 text-emerald-300 shrink-0" />
-                <a href="mailto:shareeah@wafycampuskalikavu.edu" className="hover:text-white transition-colors truncate">
-                  dept.ofshareea@wafycampuskalikavu.edu
+                <a href="mailto:ifcwafycampus@gmail.com" className="hover:text-white transition-colors truncate">
+                  ifcwafycampus@gmail.com
                 </a>
               </div>
 
